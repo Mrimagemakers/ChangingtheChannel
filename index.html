@@ -1,129 +1,3421 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Changing the Channel - WebXR 3D Flipbook</title>
-    <style>
-      :root { color-scheme: dark; --accent: #8ee7ff; }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0; min-height: 100vh; overflow: hidden;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-        color: #edfaff;
-        background: radial-gradient(circle at 50% 35%, #1d3a52 0, #09131e 48%, #03070b 100%);
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changing the Channel — WebXR 3D Flipbook &amp; EQ Companion | Darnell E. Clark</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
       }
-      .shell { position: relative; z-index: 2; height: 100vh; display: grid; place-items: center; }
-      .copy { position: absolute; top: 24px; left: 24px; max-width: 480px; }
-      h1 { margin: 0 0 8px; font-size: clamp(24px, 4vw, 46px); }
-      p { margin: 0; color: #b5cad6; }
-      .controls { position: absolute; bottom: 24px; display: flex; gap: 12px; z-index: 5; }
-      button {
-        border: 1px solid rgba(142, 231, 255, .4); border-radius: 999px;
-        padding: 12px 18px; color: white; background: rgba(8, 24, 36, .82);
-        backdrop-filter: blur(12px); cursor: pointer;
-      }
-      button:hover { background: rgba(33, 71, 94, .95); }
-      .scene {
-        width: 520px; max-width: 85vw; height: 360px;
-        perspective: 1200px; transform-style: preserve-3d;
-      }
-      .book {
-        position: relative; width: 100%; height: 100%;
-        transform-style: preserve-3d; transform: rotateX(8deg) rotateY(-14deg);
-        transition: transform .8s ease;
-      }
-      .book.dragging { transition: none; }
-      .page {
-        position: absolute; inset: 0;
-        border: 1px solid rgba(142, 231, 255, .25); border-radius: 8px;
-        background: linear-gradient(135deg, rgba(25, 57, 78, .96), rgba(7, 18, 28, .98));
-        box-shadow: 0 28px 80px rgba(0, 0, 0, .45);
-        display: grid; place-items: center; text-align: center; padding: 44px;
-        transform-origin: left center; transition: transform .8s cubic-bezier(.2,.75,.2,1);
-        backface-visibility: hidden;
-      }
-      .page:nth-child(1) { transform: translateZ(-12px); }
-      .page:nth-child(2) { transform: translateZ(-8px); }
-      .page:nth-child(3) { transform: translateZ(-4px); }
-      .page:nth-child(4) { transform: translateZ(0); }
-      .page.turning { transform: rotateY(-158deg); }
-      .page strong { display: block; color: var(--accent); letter-spacing: .12em; margin-bottom: 12px; }
-      .page h2 { margin: 0 0 12px; font-size: clamp(28px, 5vw, 52px); }
-      .page span { color: #b5cad6; line-height: 1.6; }
-      canvas#xrCanvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
-    </style>
-  </head>
-  <body>
-    <canvas id="xrCanvas" aria-hidden="true"></canvas>
-    <main class="shell">
-      <header class="copy">
-        <h1>Changing the Channel</h1>
-        <p>A spatial story about what we choose to tune in.</p>
-      </header>
-      <section class="scene" aria-label="Interactive 3D flipbook">
-        <div class="book" id="book">
-          <article class="page"><div><strong>PAGE 01</strong><h2>Stay Curious</h2><span>Every new frequency opens a different view.</span></div></article>
-          <article class="page"><div><strong>PAGE 02</strong><h2>Shift Perspective</h2><span>Move the book, turn the page, change the story.</span></div></article>
-          <article class="page"><div><strong>PAGE 03</strong><h2>Find Signal</h2><span>In the noise, choose the voices that move you.</span></div></article>
-          <article class="page"><div><strong>PAGE 04</strong><h2>Open Channel</h2><span>The next transmission is yours to make.</span></div></article>
+    }
+  </script>
+
+  <style>
+    :root {
+      --gold: #f59e0b;
+      --amber: #d97706;
+      --teal: #14b8a6;
+      --deep: #070b14;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #060911;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      color: #f8fafc;
+      user-select: none;
+    }
+    .serif-display {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+    .glass-panel {
+      background: rgba(10, 16, 30, 0.78);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+    .glass-pill {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(245, 158, 11, 0.45);
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(245, 158, 11, 0.75);
+    }
+    #VRButton {
+      display: none !important;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 18px rgba(245, 158, 11, 0.35); }
+      50% { box-shadow: 0 0 32px rgba(20, 184, 166, 0.55); }
+    }
+    .xr-ready-pulse {
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+    #breath-orb {
+      transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 4s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation & Status HUD -->
+  <header class="fixed top-0 left-0 right-0 z-30 pointer-events-none px-4 py-3 md:px-6 md:py-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="glass-panel rounded-2xl px-4 py-2.5 flex items-center gap-3.5 pointer-events-auto">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-teal-500 flex items-center justify-center text-slate-950 font-bold shadow-lg shrink-0">
+        <i class="fa-solid fa-tv text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="serif-display text-lg md:text-xl font-bold tracking-wide text-amber-300 leading-none">
+            CHANGING THE CHANNEL
+          </h1>
+          <span class="hidden sm:inline-block text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 font-semibold">
+            WebXR 3D Edition
+          </span>
         </div>
-      </section>
-      <nav class="controls" aria-label="Flipbook controls">
-        <button id="prev" type="button">Previous</button>
-        <button id="next" type="button">Next</button>
-        <button id="xr" type="button" hidden>Enter XR</button>
-      </nav>
-    </main>
-    <script>
-      const pages = [...document.querySelectorAll('.page')];
-      const book = document.getElementById('book');
-      const xrButton = document.getElementById('xr');
-      let position = 0;
+        <p class="text-xs text-slate-300 mt-0.5">
+          The 10 Golden Rules of Emotional Intelligence • <span class="text-teal-300 font-medium">Darnell E. Clark</span>
+        </p>
+      </div>
+    </div>
 
-      function update() {
-        pages.forEach((page, i) => page.classList.toggle('turning', i < position));
+    <div class="flex items-center gap-2 pointer-events-auto flex-wrap">
+      <div class="glass-pill rounded-full p-1 hidden xl:flex items-center gap-1 text-xs">
+        <button data-env="sanctuary" class="env-btn active px-3 py-1.5 rounded-full bg-amber-500 text-slate-950 font-semibold transition">
+          <i class="fa-solid fa-spa mr-1"></i>Sanctuary
+        </button>
+        <button data-env="horizon" class="env-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white transition">
+          <i class="fa-solid fa-water mr-1"></i>Calm Horizon
+        </button>
+        <button data-env="studio" class="env-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white transition">
+          <i class="fa-solid fa-broadcast-tower mr-1"></i>EQ Studio
+        </button>
+      </div>
+
+      <button id="btn-narrate" class="glass-pill rounded-full px-3.5 py-2 text-xs font-medium text-slate-200 hover:border-amber-400/60 hover:text-amber-300 transition flex items-center gap-1.5" title="Read Current Spread Aloud">
+        <i class="fa-solid fa-volume-high text-amber-400" id="narrate-icon"></i>
+        <span class="hidden md:inline" id="narrate-label">Read Aloud</span>
+      </button>
+
+      <button id="btn-audio" class="glass-pill rounded-full px-3.5 py-2 text-xs font-medium text-slate-200 hover:border-teal-400/60 hover:text-teal-300 transition flex items-center gap-1.5" title="Play/Pause Calm Relaxing Music">
+        <i class="fa-solid fa-music text-teal-300" id="audio-icon"></i>
+        <span class="hidden sm:inline" id="audio-label">Relaxing Music</span>
+      </button>
+
+      <button id="btn-theme-song" class="glass-pill rounded-full px-3.5 py-2 text-xs font-medium text-amber-200 border border-amber-400/35 hover:border-amber-400/75 hover:bg-amber-500/15 transition flex items-center gap-1.5" title="Play 'Changing the Channel' Theme Song">
+        <i class="fa-solid fa-compact-disc text-amber-400" id="song-disc-icon"></i>
+        <span class="hidden sm:inline">Theme Song</span>
+      </button>
+
+      <button id="btn-companion" class="glass-pill rounded-full px-3.5 py-2 text-xs font-medium text-teal-200 border border-teal-400/30 hover:border-teal-400/60 hover:bg-teal-500/10 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-sliders text-teal-400"></i>
+        <span>EQ Companion</span>
+      </button>
+
+      <button id="btn-enter-vr" class="xr-ready-pulse rounded-full px-4 py-2 text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 hover:brightness-110 transition flex items-center gap-2 shadow-lg">
+        <i class="fa-solid fa-vr-cardboard text-sm"></i>
+        <span id="vr-btn-text">Enter VR</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Floating Rule Telemetry Card -->
+  <aside id="telemetry-card" class="hidden lg:flex flex-col gap-2.5 fixed left-5 top-24 w-72 glass-panel rounded-2xl p-4 pointer-events-auto z-20 transition-all duration-300">
+    <div class="flex items-center justify-between">
+      <span id="tele-freq" class="text-[11px] font-bold uppercase tracking-widest text-amber-400">88.0 FM • COVER</span>
+      <span id="tele-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-400/20">PenGame Publishing</span>
+    </div>
+    <div>
+      <h2 id="tele-title" class="serif-display text-lg font-bold text-white leading-snug">Changing the Channel</h2>
+      <p id="tele-sub" class="text-xs text-slate-300 mt-0.5 leading-relaxed">A practical guide to mastering emotions, boosting self-awareness, and living a life of purpose &amp; productivity.</p>
+    </div>
+    <div id="tele-shift-box" class="bg-slate-950/60 border border-white/5 rounded-xl p-2.5 text-[11px] text-slate-300 leading-relaxed">
+      <span class="text-amber-300 font-semibold block mb-0.5">Channel Shift:</span>
+      <span id="tele-shift">Click the book cover or press Next to tune into the 10 Golden Rules.</span>
+    </div>
+    <div class="flex items-center gap-2 pt-0.5">
+      <button id="tele-journal-btn" class="flex-1 text-[11px] font-semibold py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-amber-200 border border-white/10 transition flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-pen-nib text-[10px]"></i> Reflect on Rule
+      </button>
+      <button id="tele-breathe-btn" class="text-[11px] font-semibold py-1.5 px-2.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-200 border border-teal-400/20 transition" title="90-Second Pause">
+        <i class="fa-solid fa-wind"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Now Playing Music & Theme Song Floating Pill -->
+  <div id="music-mini-bar" class="fixed right-5 top-24 w-72 glass-panel rounded-2xl p-3.5 pointer-events-auto z-20 transition-all duration-300 border border-amber-400/25 hidden sm:block">
+    <div class="flex items-center justify-between gap-2 mb-1.5">
+      <div class="flex items-center gap-2 min-w-0">
+        <div id="music-eq-bars" class="flex items-end gap-0.5 h-3.5 w-4 shrink-0">
+          <span class="w-1 bg-amber-400 rounded-full h-1.5 transition-all"></span>
+          <span class="w-1 bg-teal-400 rounded-full h-3 transition-all"></span>
+          <span class="w-1 bg-orange-400 rounded-full h-2 transition-all"></span>
+        </div>
+        <span id="mini-track-tag" class="text-[10px] font-bold uppercase tracking-widest text-amber-400 truncate">SOUNDTRACK READY</span>
+      </div>
+      <button id="mini-open-studio" class="text-[10px] text-teal-300 hover:text-white underline shrink-0">All Tracks</button>
+    </div>
+    <div class="flex items-center justify-between gap-2">
+      <div class="min-w-0">
+        <div id="mini-track-title" class="text-xs font-bold text-white truncate">Changing the Channel (Theme Song)</div>
+        <div id="mini-track-lyric" class="text-[11px] text-slate-300 italic truncate">"You hold the remote to your peace..."</div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button id="mini-prev-track" class="w-7 h-7 rounded-full bg-white/5 hover:bg-white/15 text-slate-200 text-xs flex items-center justify-center transition" title="Previous Track">
+          <i class="fa-solid fa-backward-step"></i>
+        </button>
+        <button id="mini-play-toggle" class="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs flex items-center justify-center shadow-md hover:brightness-110 transition" title="Play / Pause Music">
+          <i class="fa-solid fa-play ml-0.5" id="mini-play-icon"></i>
+        </button>
+        <button id="mini-next-track" class="w-7 h-7 rounded-full bg-white/5 hover:bg-white/15 text-slate-200 text-xs flex items-center justify-center transition" title="Next Track">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Flipbook Transport & Chapter Scrubber -->
+  <footer class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-4xl pointer-events-auto">
+    <div class="glass-panel rounded-2xl px-4 py-3 flex flex-col gap-2.5">
+      <div class="flex items-center gap-3">
+        <span class="text-[11px] font-bold text-amber-400 tracking-wider uppercase shrink-0">
+          <i class="fa-solid fa-radio mr-1"></i>CH <span id="hud-spread-idx">00</span>/<span id="hud-spread-total">14</span>
+        </span>
+        <input id="spread-scrubber" type="range" min="0" max="14" value="0" class="w-full accent-amber-400 cursor-pointer h-1.5 bg-slate-700 rounded-lg" />
+        <span id="hud-chapter-pill" class="text-[11px] font-medium text-teal-300 truncate max-w-[160px] sm:max-w-[230px] text-right">
+          Cover Edition
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5">
+          <button id="btn-toc" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-200 border border-white/10 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-list-ul text-amber-400"></i>
+            <span class="hidden sm:inline">Chapters</span>
+          </button>
+          <button id="btn-zoom-toggle" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-200 border border-white/10 transition flex items-center gap-1.5" title="Toggle Close-Up Reading View">
+            <i class="fa-solid fa-magnifying-glass-plus text-teal-400" id="zoom-icon"></i>
+            <span class="hidden sm:inline" id="zoom-label">Reader Zoom</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-prev" class="px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-xs font-semibold text-white border border-white/10 transition flex items-center gap-1.5 disabled:opacity-40">
+            <i class="fa-solid fa-chevron-left"></i>
+            <span>Prev</span>
+          </button>
+          <button id="btn-flip-hint" class="hidden md:flex px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-400/25 text-[11px] text-amber-200 items-center gap-1.5">
+            <i class="fa-solid fa-hand-pointer"></i> Click 3D Page or Use Arrow Keys
+          </button>
+          <button id="btn-next" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-xs font-bold text-slate-950 transition flex items-center gap-1.5 shadow-md">
+            <span>Next</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button id="btn-quick-quiz" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-200 border border-white/10 transition flex items-center gap-1.5" title="EQ Self-Assessment & Style Quiz">
+            <i class="fa-solid fa-clipboard-check text-amber-400"></i>
+            <span class="hidden sm:inline">EQ Quiz</span>
+          </button>
+          <button id="btn-quick-media" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-200 border border-white/10 transition flex items-center gap-1.5" title="Promo & Audio Companion">
+            <i class="fa-solid fa-podcast text-teal-400"></i>
+            <span class="hidden sm:inline">Media</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Table of Contents Modal -->
+  <div id="toc-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="glass-panel rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-amber-400/30">
+      <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-widest text-amber-400">PenGame Publishing Edition • 2026</span>
+          <h2 class="serif-display text-2xl font-bold text-white">Channel Guide &amp; 10 Golden Rules</h2>
+        </div>
+        <button id="close-toc" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-200">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="toc-grid" class="p-6 overflow-y-auto custom-scroll grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+    </div>
+  </div>
+
+  <!-- Interactive EQ Companion Slide-Over Drawer -->
+  <aside id="companion-drawer" class="fixed top-0 right-0 bottom-0 z-40 w-full max-w-md glass-panel border-l border-white/15 transform translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300">
+          <i class="fa-solid fa-compass"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-sm text-white">EQ Interactive Companion</h2>
+          <p class="text-[11px] text-slate-400">Practice the 10 Golden Rules in Real Time</p>
+        </div>
+      </div>
+      <button id="close-companion" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="flex border-b border-white/10 px-2 bg-slate-950/40 overflow-x-auto">
+      <button data-tab="rules" class="comp-tab active flex-1 py-2.5 px-2 text-xs font-semibold text-amber-400 border-b-2 border-amber-400 transition whitespace-nowrap">Rule Lab</button>
+      <button data-tab="breathe" class="comp-tab flex-1 py-2.5 px-2 text-xs font-semibold text-slate-400 hover:text-white transition whitespace-nowrap">Breathe</button>
+      <button data-tab="music" class="comp-tab flex-1 py-2.5 px-2 text-xs font-semibold text-slate-400 hover:text-white transition whitespace-nowrap">Music &amp; Song</button>
+      <button data-tab="workbook" class="comp-tab flex-1 py-2.5 px-2 text-xs font-semibold text-slate-400 hover:text-white transition whitespace-nowrap">Workbook</button>
+      <button data-tab="media" class="comp-tab flex-1 py-2.5 px-2 text-xs font-semibold text-slate-400 hover:text-white transition whitespace-nowrap">Media</button>
+      <button data-tab="quiz" class="comp-tab flex-1 py-2.5 px-2 text-xs font-semibold text-slate-400 hover:text-white transition whitespace-nowrap">EQ Quiz</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto custom-scroll p-5 space-y-5">
+      <div id="tab-rules" class="comp-pane space-y-4">
+        <div class="rounded-2xl p-4 bg-gradient-to-br from-amber-500/15 to-teal-500/10 border border-amber-400/25">
+          <div class="flex items-center justify-between mb-1">
+            <span id="lab-rule-tag" class="text-[10px] font-bold uppercase tracking-widest text-amber-400">ACTIVE CHANNEL</span>
+            <span id="lab-rule-num" class="text-xs font-bold text-teal-300">88.0 FM</span>
+          </div>
+          <h3 id="lab-rule-title" class="serif-display text-xl font-bold text-white">The Power of Changing the Channel</h3>
+          <p id="lab-rule-quote" class="text-xs italic text-amber-200/90 mt-1.5 border-l-2 border-amber-400 pl-2.5">
+            "You do not always control the first emotion that appears, but you can learn to choose what gets your attention, your energy, and your next move."
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-semibold text-slate-200 flex items-center justify-between">
+            <span><i class="fa-solid fa-tag text-amber-400 mr-1.5"></i>Rule #1: Name It to Tame It</span>
+            <span class="text-[10px] text-slate-400">Beyond "Mad / Sad / Stressed / Fine"</span>
+          </label>
+          <div id="emotion-chips" class="flex flex-wrap gap-1.5"></div>
+          <p id="emotion-insight" class="text-[11px] text-teal-300 bg-teal-950/40 border border-teal-500/20 rounded-lg p-2.5 hidden"></p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-xs font-semibold text-slate-200">
+            <i class="fa-solid fa-pen-to-square text-teal-400 mr-1.5"></i>Action Exercise &amp; Reflection Prompts
+          </div>
+          <div id="lab-exercise-box" class="text-xs text-slate-300 bg-slate-900/80 border border-white/10 rounded-xl p-3 leading-relaxed"></div>
+          <div id="lab-prompts-list" class="space-y-1 text-[11px] text-amber-200/90 bg-amber-950/20 border border-amber-500/15 rounded-xl p-3"></div>
+          <textarea id="journal-input" rows="4" class="w-full rounded-xl bg-slate-950/80 border border-white/15 p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Write your reflection, trigger map, or boundary script here (saved automatically on this device)..."></textarea>
+          <div class="flex items-center justify-between">
+            <span id="journal-status" class="text-[11px] text-slate-400">Saved locally</span>
+            <button id="btn-export-journal" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold border border-amber-400/30 transition">
+              <i class="fa-solid fa-download mr-1"></i>Export Notes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-breathe" class="comp-pane hidden space-y-5">
+        <div class="text-center space-y-1">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-teal-400">Golden Rule #2 • Pause Before You Play</span>
+          <h3 class="serif-display text-2xl font-bold text-white">4-6 Cadence &amp; 90-Second Reset</h3>
+          <p class="text-xs text-slate-300">
+            "The pause is where your power lives. Emotional chemistry surges quickly, but a two-breath pause interrupts the automatic loop."
+          </p>
+        </div>
+
+        <div class="relative flex items-center justify-center py-8">
+          <div id="breath-orb" class="w-36 h-36 rounded-full bg-gradient-to-tr from-teal-500/30 via-amber-400/25 to-orange-500/30 border-2 border-teal-300/60 flex flex-col items-center justify-center text-center shadow-2xl">
+            <span id="breath-phase" class="text-sm font-bold text-white tracking-wide">READY</span>
+            <span id="breath-timer" class="text-2xl font-extrabold text-amber-300 mt-0.5">01:30</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-center gap-3">
+          <button id="btn-breath-start" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-bold text-xs shadow-lg hover:brightness-110 transition">
+            <i class="fa-solid fa-play mr-1.5"></i>Start 90s Pause
+          </button>
+          <button id="btn-breath-stop" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 font-semibold text-xs transition">
+            Reset
+          </button>
+        </div>
+
+        <div class="rounded-xl bg-slate-900/75 border border-white/10 p-3.5 space-y-2 text-xs text-slate-300">
+          <div class="font-semibold text-amber-300"><i class="fa-solid fa-bolt mr-1.5"></i>Instant Grounding Checklist (Rules #2 &amp; #7):</div>
+          <ul class="space-y-1.5 text-[11px] list-disc pl-4">
+            <li>Breathe in for <strong>4 counts</strong>, exhale slowly for <strong>6 counts</strong>.</li>
+            <li>Put your phone down before answering any triggering text or email.</li>
+            <li>Say aloud: <em>"I need a minute to think about that."</em></li>
+            <li>Count backward from 10, uncross your shoulders, and ground both feet.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="tab-music" class="comp-pane hidden space-y-4">
+        <div class="rounded-2xl p-4 bg-gradient-to-br from-amber-500/15 via-slate-900/90 to-teal-500/15 border border-amber-400/30">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400">Official Book Anthem &amp; Soundscapes</span>
+            <span id="studio-playing-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300">Paused</span>
+          </div>
+          <h3 id="studio-track-name" class="serif-display text-xl font-bold text-white">Changing the Channel (Official Theme Song)</h3>
+          <p id="studio-track-desc" class="text-xs text-slate-300 mt-1 leading-relaxed">Warm Rhodes chords, soulful lo-fi groove, and uplifting melody inspired by Darnell E. Clark's 10 Golden Rules.</p>
+
+          <div class="mt-3 p-3 rounded-xl bg-slate-950/70 border border-white/10 text-center">
+            <div class="text-[10px] uppercase tracking-widest text-teal-400 mb-1">Live Song Lyrics &amp; Channel Mantra</div>
+            <p id="studio-lyric-line" class="serif-display italic text-base text-amber-200 min-h-[1.75rem]">"Press Play to tune into Changing the Channel..."</p>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 mt-3.5">
+            <div class="flex items-center gap-2">
+              <button id="studio-prev-btn" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"><i class="fa-solid fa-backward-step"></i></button>
+              <button id="studio-play-btn" class="px-4 h-9 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg hover:brightness-110 transition">
+                <i class="fa-solid fa-play" id="studio-play-icon"></i>
+                <span id="studio-play-text">Play Music</span>
+              </button>
+              <button id="studio-next-btn" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+            <div class="flex items-center gap-2 flex-1 max-w-[130px]">
+              <i class="fa-solid fa-volume-low text-xs text-slate-400"></i>
+              <input id="music-volume-slider" type="range" min="0" max="100" value="65" class="w-full accent-amber-400 cursor-pointer h-1.5 bg-slate-700 rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2.5">Select Channel Soundtrack</h4>
+          <div id="music-track-list" class="space-y-2"></div>
+        </div>
+
+        <div class="rounded-xl p-3.5 bg-slate-950/60 border border-white/10">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-amber-300 mb-1.5">
+            <i class="fa-solid fa-microphone-lines mr-1"></i> "Changing the Channel" — Official Lyrics
+          </div>
+          <div class="text-xs text-slate-300 space-y-2 leading-relaxed font-normal">
+            <p><strong class="text-amber-200">[Verse 1]</strong><br />Noise in the static, storm in the mind,<br />Replaying yesterday, leaving peace behind.<br />Name what you're feeling, take a breath and see,<br />A passing emotion isn't destiny.</p>
+            <p><strong class="text-teal-300">[Chorus]</strong><br />Change the channel, turn the dial to grace,<br />Step out the chaos into steady space.<br />You hold the remote, you choose what stays on,<br />Changing the channel till the storm is gone.</p>
+            <p><strong class="text-amber-200">[Bridge]</strong><br />Pause before you play, let the truth ring clear,<br />Boundaries are doors, courage conquers fear.<br />You are the DJ of the life you lead—<br />Tune into wisdom, let your spirit breathe.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-workbook" class="comp-pane hidden space-y-4">
+        <div class="rounded-2xl p-4 bg-slate-900/80 border border-amber-400/20">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400">Bonus Feature 2 • Emotional Hygiene</span>
+          <h3 class="serif-display text-xl font-bold text-white mt-0.5">Daily Channel Changer Exercises</h3>
+          <p class="text-xs text-slate-300 mt-1">
+            "Emotional intelligence is not a checklist you master once. It is a daily rhythm you return to."
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-sun mr-1.5"></i>Morning Reset (5 Minutes)</span>
+              <span class="text-[10px] text-slate-400">Set Your Channel</span>
+            </div>
+            <p class="text-[11px] text-slate-300">1. What am I feeling as I begin today? • 2. What do I need most today? • 3. What channel do I want to lead with (peace, courage, clarity, patience)?</p>
+            <input id="wb-morning" type="text" class="w-full rounded-lg bg-slate-950/80 border border-white/15 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Today I choose to lead with..." />
+          </div>
+
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-teal-300"><i class="fa-solid fa-clock mr-1.5"></i>Midday Check-In</span>
+              <span class="text-[10px] text-slate-400">Reacting vs. Responding</span>
+            </div>
+            <p class="text-[11px] text-slate-300">1. What has affected my mood so far? • 2. Am I reacting or responding? • 3. What one physical action (Rule #7) would help me reset?</p>
+            <input id="wb-midday" type="text" class="w-full rounded-lg bg-slate-950/80 border border-white/15 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400" placeholder="My midday reset action is..." />
+          </div>
+
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-300"><i class="fa-solid fa-moon mr-1.5"></i>Evening Reflection</span>
+              <span class="text-[10px] text-slate-400">Review &amp; Renew</span>
+            </div>
+            <p class="text-[11px] text-slate-300">1. What emotion showed up most today? • 2. What did I handle well today? • 3. What will I do differently tomorrow?</p>
+            <input id="wb-evening" type="text" class="w-full rounded-lg bg-slate-950/80 border border-white/15 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400" placeholder="One win I handled well today..." />
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-slate-900/75 border border-white/10 p-3.5 space-y-2">
+          <div class="text-xs font-bold text-amber-300"><i class="fa-solid fa-book-open mr-1.5"></i>Bonus Feature 3: 7 Guided Journaling Prompts</div>
+          <ol class="text-[11px] text-slate-300 space-y-1.5 list-decimal pl-4">
+            <li>What emotion do I avoid most, and why?</li>
+            <li>What story have I outgrown but still replay?</li>
+            <li>Where in my life do I need clearer boundaries?</li>
+            <li>What triggers me most quickly, and what does that reveal?</li>
+            <li>What would emotional maturity look like in my relationships?</li>
+            <li>What does self-compassion sound like in my own voice?</li>
+            <li>What kind of emotional atmosphere do I want to create around me?</li>
+          </ol>
+        </div>
+
+        <div class="rounded-xl bg-slate-900/75 border border-white/10 p-3.5 space-y-2">
+          <div class="text-xs font-bold text-teal-300"><i class="fa-solid fa-graduation-cap mr-1.5"></i>Bonus Feature 5: Workbook &amp; Course Companion</div>
+          <div class="grid grid-cols-1 gap-1.5 text-[11px] text-slate-300">
+            <div class="p-2 rounded bg-white/5"><strong>Module 1:</strong> Emotional Awareness Foundations</div>
+            <div class="p-2 rounded bg-white/5"><strong>Module 2:</strong> Reframing and Self-Talk</div>
+            <div class="p-2 rounded bg-white/5"><strong>Module 3:</strong> Empathy, Boundaries, and Communication</div>
+            <div class="p-2 rounded bg-white/5"><strong>Module 4:</strong> Triggers, Regulation, and Growth</div>
+            <div class="p-2 rounded bg-white/5"><strong>Module 5:</strong> Building a Daily EQ Practice (30-Day Challenge)</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-media" class="comp-pane hidden space-y-4">
+        <div class="rounded-2xl p-4 bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 space-y-2">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400">PenGame Publishing, LLC • Atlanta, GA</span>
+          <h3 class="serif-display text-xl font-bold text-white">Official Audio &amp; Interactive Companion</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Copyright © 2026 Darnell E. Clark. Published by PenGame Publishing, LLC • 260 Peachtree Street NW, Suite 2229, Atlanta, GA 30303 • www.pengamepublishing.com
+          </p>
+        </div>
+
+        <div class="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center">
+                <i class="fa-solid fa-microphone-lines"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white">Narrated by Lamont Hightower</div>
+                <div class="text-[11px] text-slate-400" id="voice-engine-status">Google Drive • ElevenLabs AI • Browser Fallback</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button id="btn-play-trailer" class="px-3 py-1.5 rounded-full bg-amber-500 text-slate-950 font-bold text-xs hover:brightness-110 transition">
+                <i class="fa-solid fa-play mr-1"></i>Spread
+              </button>
+              <button id="btn-narrate-full-book" class="px-3 py-1.5 rounded-full bg-teal-500/25 hover:bg-teal-500/40 text-teal-200 border border-teal-400/40 font-bold text-xs transition" title="Narrate Entire Book From Cover to Finale">
+                <i class="fa-solid fa-book-open-reader mr-1"></i>Full Book
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-1 border-t border-white/10">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-teal-300 mb-1">Narration Engine (Narrator: Lamont Hightower)</label>
+              <select id="narration-source-mode" class="w-full rounded-lg bg-slate-950/85 border border-white/15 px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-teal-400">
+                <option value="gdrive">Google Drive Audio (Lamont Hightower Recording)</option>
+                <option value="elevenlabs">ElevenLabs AI Voice Synthesis</option>
+                <option value="webspeech">Browser Web Speech Fallback</option>
+              </select>
+            </div>
+
+            <div id="gdrive-audio-config" class="space-y-2 rounded-xl bg-slate-950/70 border border-teal-400/20 p-2.5">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-amber-300">Google Drive Audio Link or File ID</label>
+              <input id="gdrive-audio-url" type="text" class="w-full rounded-lg bg-slate-950/90 border border-white/15 px-2.5 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Paste Google Drive file link, ID, or direct MP3/WAV URL..." />
+              <p class="text-[10px] text-slate-400 leading-relaxed">
+                Share the Google Drive audio file as <em>Anyone with the link can view</em> (or paste a direct audio URL). If unavailable, it automatically falls back to ElevenLabs or Web Speech.
+              </p>
+            </div>
+          </div>
+
+          <div id="elevenlabs-config-box" class="space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">AI Voice Preset</label>
+                <select id="eleven-voice-select" class="w-full rounded-lg bg-slate-950/85 border border-white/15 px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400">
+                  <option value="JBFqnCBsd6RMkjVDRZzb">George (Warm Editorial Baritone)</option>
+                  <option value="onwK4e9ZLuTAKqWW03F9">Daniel (Steady British Narrator)</option>
+                  <option value="N2lVS1w4EtoT3dr4eOWO">Callum (Calm Reflective Guide)</option>
+                  <option value="EXAVITQu4vr4xnSDxMaL">Sarah (Empathetic &amp; Clear)</option>
+                  <option value="pFZP5JQG7iQjIQuC4Bku">Lily (Soothing &amp; Grounded)</option>
+                  <option value="custom">Custom Voice ID...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">ElevenLabs Model</label>
+                <select id="eleven-model-select" class="w-full rounded-lg bg-slate-950/85 border border-white/15 px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-teal-400">
+                  <option value="eleven_multilingual_v2">Multilingual v2 (Expressive)</option>
+                  <option value="eleven_turbo_v2_5">Turbo v2.5 (Fast Streaming)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="custom-voice-row" class="hidden">
+              <input id="eleven-custom-voice-id" type="text" class="w-full rounded-lg bg-slate-950/85 border border-white/15 px-3 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Enter custom ElevenLabs Voice ID..." />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">ElevenLabs API Key (Saved Locally)</label>
+              <input id="eleven-api-key" type="password" class="w-full rounded-lg bg-slate-950/85 border border-white/15 px-3 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="xi-... (optional — uses Web Speech fallback if blank)" />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-300 bg-slate-950/60 px-3 py-2 rounded-lg border border-white/5">
+            <span id="narration-progress-label">Lamont Hightower • 15 Spreads Ready</span>
+            <button id="btn-stop-narration-media" class="text-rose-300 hover:text-rose-200 font-semibold hidden">
+              <i class="fa-solid fa-stop mr-1"></i>Stop
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-quiz" class="comp-pane hidden space-y-4">
+        <div class="rounded-2xl p-4 bg-slate-900/80 border border-teal-400/25">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-teal-400">Bonus Features 1 &amp; 6</span>
+          <h3 class="serif-display text-xl font-bold text-white mt-0.5">EQ Self-Assessment &amp; Channel Style</h3>
+          <p class="text-xs text-slate-300 mt-1">
+            Rate yourself from <strong>1 (Rarely)</strong> to <strong>5 (Consistently)</strong> across all 10 Golden Rules (Max Score: 50).
+          </p>
+        </div>
+
+        <div id="quiz-questions" class="space-y-3"></div>
+
+        <button id="btn-calc-quiz" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-bold text-xs shadow-lg hover:brightness-110 transition">
+          Calculate My EQ Score &amp; Channel Style
+        </button>
+
+        <div id="quiz-result" class="hidden rounded-2xl p-4 bg-gradient-to-br from-teal-950/90 to-slate-900 border border-teal-400/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-teal-300">Your EQ Profile</span>
+            <span id="quiz-score-badge" class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950">40/50</span>
+          </div>
+          <h4 id="quiz-style-title" class="serif-display text-xl font-bold text-white">The Reflective Regulator</h4>
+          <p id="quiz-style-desc" class="text-xs text-slate-200 leading-relaxed"></p>
+          <p id="quiz-score-guide" class="text-[11px] text-amber-200/90 bg-slate-950/60 p-2.5 rounded-lg border border-white/10"></p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Toast Notification Banner -->
+  <div id="toast-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+    <div class="glass-pill rounded-full px-4 py-2 text-xs font-semibold text-amber-200 border border-amber-400/40 shadow-xl flex items-center gap-2">
+      <i class="fa-solid fa-sparkles text-amber-400"></i>
+      <span id="toast-text">Tuned to Channel</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+    // Safe global error guard so UI buttons never silently freeze if an API throws
+    window.addEventListener('error', (ev) => {
+      console.warn('App error guarded:', ev.message || ev.error);
+    });
+    window.addEventListener('unhandledrejection', (ev) => {
+      console.warn('Promise rejection guarded:', ev.reason);
+    });
+
+    // =========================================================================
+    // 1. COMPLETE BOOK DATA — CHANGING THE CHANNEL (DARNELL E. CLARK, 2026)
+    // =========================================================================
+    const BOOK_SPREADS = [
+      {
+        id: 0,
+        type: 'cover',
+        freq: '88.0 FM • COVER EDITION',
+        chapterLabel: 'Cover Edition',
+        title: 'Changing the Channel',
+        subtitle: 'The 10 Golden Rules of Emotional Intelligence — A practical guide to mastering emotions, boosting self-awareness, and living a life of purpose & productivity.',
+        author: 'Darnell E. Clark • PenGame Publishing, LLC',
+        shift: 'Tap the cover or click Next to tune into the 10 Golden Rules of Emotional Intelligence.',
+        quote: 'You do not always control the first emotion that appears, but you can learn to choose what gets your attention, your energy, and your next move.',
+        exercise: 'Take one slow breath, notice what channel is playing in your mind right now, and open the first spread.',
+        prompts: [
+          'What emotional channel is playing the loudest in my life right now?',
+          'What would change if I became the intentional DJ of my inner world?'
+        ],
+        accent: '#f59e0b',
+        secondary: '#14b8a6'
+      },
+      {
+        id: 1,
+        type: 'spread',
+        freq: '89.5 FM • DEDICATION & GUIDE',
+        chapterLabel: 'Dedication & Channel Guide',
+        left: {
+          kicker: 'DEDICATION • PEN-GAME PUBLISHING',
+          heading: 'For Every Channel Changer',
+          body: [
+            'To everyone who has ever felt overwhelmed by what they feel, confused by how they react, or exhausted by trying to hold it all together—this book is for you.',
+            'May you learn how to change the channel without losing your voice, your vision, or yourself.'
+          ],
+          callout: 'Published by PenGame Publishing, LLC • Atlanta, GA • Copyright © 2026 Darnell E. Clark. All rights reserved.'
+        },
+        right: {
+          kicker: 'CONTENTS • THE 10 GOLDEN RULES',
+          heading: 'Your Broadcast Directory',
+          body: [
+            'This book is for educational and personal development purposes only and is not a substitute for professional mental health care.'
+          ],
+          bullets: [
+            'Intro: The Power of Changing the Channel',
+            'Rule 1: Name It to Tame It • Rule 2: Pause Before You Play',
+            'Rule 3: Feelings Are Feedback, Not Facts • Rule 4: Flip the Script',
+            'Rule 5: Empathy • Rule 6: Boundaries • Rule 7: Mood Follows Motion',
+            'Rule 8: Check Triggers • Rule 9: Respond, Don’t React • Rule 10: Grow Through It'
+          ]
+        },
+        shift: 'From holding it all together in silence to learning a sustainable rhythm.',
+        quote: 'May you learn how to change the channel without losing your voice, your vision, or yourself.',
+        exercise: 'Pick one Golden Rule from the directory that feels most relevant to your current season.',
+        prompts: [
+          'Which Golden Rule do I need most in this season of my life?',
+          'Where have I been trying to hold everything together alone?'
+        ],
+        accent: '#f59e0b',
+        secondary: '#0ea5e9'
+      },
+      {
+        id: 2,
+        type: 'spread',
+        freq: '90.7 FM • INTRODUCTION',
+        chapterLabel: 'Intro: The Power of Changing the Channel',
+        left: {
+          kicker: 'INTRODUCTION',
+          heading: 'The Power of Changing the Channel',
+          body: [
+            'Most people think emotional intelligence is something reserved for therapists, executives, or people who seem naturally calm under pressure. But it is not about being perfect, agreeable, or endlessly patient.',
+            'It is about understanding what is happening inside you, recognizing what is happening around you, and choosing what to do next with intention.'
+          ],
+          callout: 'Imagine your mind as a television with dozens of channels playing at once. Too often, we get stuck watching the loudest channel without realizing we have options.'
+        },
+        right: {
+          kicker: 'FROM AUTOPILOT TO AUTHORSHIP',
+          heading: 'Emotions Are Messengers',
+          body: [
+            'I remember carrying frustration I never named, fatigue I never respected, and anxiety I kept calling "motivation." I was not weak. I was overloaded.',
+            'Emotions are not random interruptions. They are messengers. They are information. When you know how to work with them instead of against them, your life begins to shift.'
+          ],
+          bullets: [
+            'Shift from chaos to clarity',
+            'Shift from reaction to response',
+            'Shift from emotional autopilot to emotional authorship'
+          ]
+        },
+        shift: 'From treating emotions as the boss to working with them as messengers.',
+        quote: 'You are not powerless in the face of your emotions. You are not stuck with the first thought, first feeling, or first impulse. You can change the channel.',
+        exercise: 'Notice which channel is broadcasting loudest today—fear, urgency, frustration, or peace—and name it without judgment.',
+        prompts: [
+          'What emotion have I been calling "motivation" or "strength" when I am actually overloaded?',
+          'Which internal channel deserves my attention right now?'
+        ],
+        accent: '#14b8a6',
+        secondary: '#f59e0b'
+      },
+      {
+        id: 3,
+        type: 'spread',
+        freq: '91.9 FM • GOLDEN RULE 01',
+        chapterLabel: 'Rule 1: Name It to Tame It',
+        left: {
+          kicker: 'GOLDEN RULE ONE',
+          heading: 'Name It to Tame It',
+          body: [
+            'Many people walk around with only four emotional words: mad, sad, stressed, or fine. Everything gets dumped into those buckets. When your vocabulary is too small, everything feels overwhelming.',
+            'Naming an emotion specifically activates the thinking part of the brain and reduces the intensity of emotional reactivity.'
+          ],
+          callout: 'Precision creates power. When you can say, "I’m not just stressed—I’m overwhelmed and underprepared," you move from confusion to clarity.'
+        },
+        right: {
+          kicker: 'EMOTIONAL GRANULARITY',
+          heading: 'Build Your Vocabulary',
+          body: [
+            'Naming an emotion does not make it disappear instantly, nor does it mean you are letting it win. It simply brings it into the light so you can work with it wisely.',
+            'Try replacing vague labels with accurate words in the EQ Companion Rule Lab.'
+          ],
+          bullets: [
+            'Instead of "Mad" → frustrated, resentful, or overlooked',
+            'Instead of "Sad" → disappointed, lonely, or grieving',
+            'Instead of "Stressed" → overstimulated, pressured, or stretched thin',
+            'Instead of "Bad" → guilty, ashamed, or discouraged'
+          ]
+        },
+        shift: 'From vague emotional overload ("stressed" / "mad") to precise naming.',
+        quote: 'Naming an emotion does not make it disappear instantly, nor does it mean you are letting it win. It simply brings it into the light.',
+        exercise: 'Twice today, pause and replace the word "fine," "stressed," or "mad" with a more specific feeling word.',
+        prompts: [
+          'What emotions do I use as default words when something deeper is going on?',
+          'How does naming a feeling change how heavy it feels?'
+        ],
+        accent: '#f59e0b',
+        secondary: '#14b8a6'
+      },
+      {
+        id: 4,
+        type: 'spread',
+        freq: '93.3 FM • GOLDEN RULE 02',
+        chapterLabel: 'Rule 2: Pause Before You Play',
+        left: {
+          kicker: 'GOLDEN RULE TWO',
+          heading: 'Pause Before You Play',
+          body: [
+            'Between what happens to you and how you respond is a space. Most people skip that space entirely. They hear a tone, read a message, feel a slight, and hit "play" immediately.',
+            'Emotional chemistry surges quickly, but a two-breath pause interrupts the automatic loop. Even a 90-second reset can shift your nervous system.'
+          ],
+          callout: 'The pause is where your power lives. Without it, your worst moments often happen in seconds.'
+        },
+        right: {
+          kicker: 'THE 90-SECOND PAUSE PROTOCOL',
+          heading: 'Interrupt the Loop',
+          body: [
+            'Pausing is not weakness or avoidance. It is discipline. It is leadership. It is choosing wisdom over impulse.',
+            'Use the Breathe tab in the EQ Companion for a guided 4-6 cadence reset.'
+          ],
+          bullets: [
+            'Take two slow, intentional breaths (inhale 4s, exhale 6s)',
+            'Set the phone down before replying to a charged message',
+            'Say: "I need a minute to think about that"',
+            'Count backward from 10 and unclench your jaw'
+          ]
+        },
+        shift: 'From instant knee-jerk impulse to a deliberate pause.',
+        quote: 'The pause is where your power lives. Without it, your worst moments often happen in seconds.',
+        exercise: 'Practice a 10-second pause before speaking or sending a message whenever you feel irritation, defensiveness, or urgency.',
+        prompts: [
+          'What happens when I react immediately vs. when I pause?',
+          'What cue tells me I need a pause right now?'
+        ],
+        accent: '#14b8a6',
+        secondary: '#38bdf8'
+      },
+      {
+        id: 5,
+        type: 'spread',
+        freq: '94.8 FM • GOLDEN RULE 03',
+        chapterLabel: 'Rule 3: Feelings Are Feedback, Not Facts',
+        left: {
+          kicker: 'GOLDEN RULE THREE',
+          heading: 'Feelings Are Feedback, Not Facts',
+          body: [
+            'Feelings are real, but they are not always accurate judges of reality. Fear feels like danger even when you are safe. Rejection feels like unworthiness even when someone is just distracted.',
+            'When you treat every feeling as a fact, you build decisions on shifting sand. When you treat feelings as feedback, you ask what they are pointing to.'
+          ],
+          callout: 'Ask yourself: "Is this a fact, or is this a feeling trying to protect me?"'
+        },
+        right: {
+          kicker: 'FEEDBACK VS. FACT',
+          heading: 'Honor Without Surrendering',
+          body: [
+            'Honoring your feelings means not shaming yourself for having them. Not surrendering judgment means checking the evidence before acting.',
+            'Separating emotional reactions from objective facts is a core pillar of emotional intelligence.'
+          ],
+          bullets: [
+            'Feeling anxious ≠ Something is definitely going wrong',
+            'Feeling ignored ≠ Nobody cares about me',
+            'Feeling behind ≠ I am failing at life',
+            'Feeling inadequate ≠ I am not capable'
+          ]
+        },
+        shift: 'From treating intense emotions as objective facts to reading them as feedback.',
+        quote: 'Feelings are real, but they are not always accurate judges of reality.',
+        exercise: 'Write down one strong feeling you had recently. Split your page into two columns: "What I Felt" and "Objective Facts."',
+        prompts: [
+          'What feeling do I most often mistake for absolute truth?',
+          'What is this feeling trying to protect me from or alert me to?'
+        ],
+        accent: '#8b5cf6',
+        secondary: '#f59e0b'
+      },
+      {
+        id: 6,
+        type: 'spread',
+        freq: '96.1 FM • GOLDEN RULE 04',
+        chapterLabel: 'Rule 4: Flip the Script',
+        left: {
+          kicker: 'GOLDEN RULE FOUR',
+          heading: 'Flip the Script',
+          body: [
+            'We all carry internal scripts—stories about who we are, what we deserve, how others see us, and what happens when things go wrong.',
+            'Many of those scripts were written in painful seasons, moments of rejection, or environments of criticism. Left unexamined, they narrate your life.'
+          ],
+          callout: 'Flipping the script does not mean toxic positivity or pretending reality isn’t there. It means replacing distortion with truth.'
+        },
+        right: {
+          kicker: 'REFRAMING HARMFUL NARRATIVES',
+          heading: 'Interrupt the Old Story',
+          body: [
+            'Notice how you talk to yourself when you make a mistake. Would you speak to someone you love that way?',
+            'Challenge all-or-nothing thinking, mind-reading, and catastrophizing.'
+          ],
+          bullets: [
+            '"I always mess things up" → "I made a mistake, and I can learn from it"',
+            '"Nobody ever shows up for me" → "I feel disappointed right now, and I can communicate what I need"',
+            '"This is going to be a disaster" → "This is challenging, but I can handle it step by step"'
+          ]
+        },
+        shift: 'From harsh, automatic self-talk to grounded, accurate reframing.',
+        quote: 'Flipping the script does not mean toxic positivity. It means replacing distortion with truth.',
+        exercise: 'Catch one negative thought today, write it down, and rewrite it in a way that is honest, fair, and constructive.',
+        prompts: [
+          'What recurring story about myself am I ready to retire?',
+          'What would a fairer, truer inner voice say right now?'
+        ],
+        accent: '#ec4899',
+        secondary: '#14b8a6'
+      },
+      {
+        id: 7,
+        type: 'spread',
+        freq: '97.6 FM • GOLDEN RULE 05',
+        chapterLabel: 'Rule 5: Empathy Is Your Superpower',
+        left: {
+          kicker: 'GOLDEN RULE FIVE',
+          heading: 'Empathy Is Your Superpower',
+          body: [
+            'If self-awareness is the first half of emotional intelligence, empathy is the second. It is the bridge between your internal world and the emotional reality of others.',
+            'Empathy is not simply being nice. It is the ability to sense, understand, and honor what another person may be feeling without making their experience about you.'
+          ],
+          callout: 'Empathy begins with paying attention. People reveal far more than words alone—their pace changes, their tone shifts, their silence stretches.'
+        },
+        right: {
+          kicker: 'LISTEN TO UNDERSTAND, NOT TO FIX',
+          heading: 'Active Listening Cues',
+          body: [
+            'Empathy does not require agreement. You can understand someone’s emotional reality without endorsing every conclusion they draw.',
+            'At the same time, absorbing everyone’s emotions without boundaries causes exhaustion. Empathy is a superpower when paired with self-awareness.'
+          ],
+          bullets: [
+            '"That sounds really heavy."',
+            '"I can see why that affected you."',
+            '"Tell me more about what that felt like."',
+            '"What do you need from me right now?"'
+          ]
+        },
+        shift: 'From rushed assumptions and fixing to deep curiosity and presence.',
+        quote: 'In a world full of noise, speed, and shallow reactions, empathy is rare. And because it is rare, it is powerful.',
+        exercise: 'In your next important conversation, focus on understanding before advising. Ask at least two follow-up questions before offering your opinion.',
+        prompts: [
+          'Do people feel genuinely heard by me?',
+          'When someone is emotional, do I rush to fix or truly listen?',
+          'How can empathy improve one key relationship in my life right now?'
+        ],
+        accent: '#10b981',
+        secondary: '#14b8a6'
+      },
+      {
+        id: 8,
+        type: 'spread',
+        freq: '99.3 FM • GOLDEN RULE 06',
+        chapterLabel: 'Rule 6: Boundaries Build Freedom',
+        left: {
+          kicker: 'GOLDEN RULE SIX',
+          heading: 'Boundaries Build Freedom',
+          body: [
+            'Many people think boundaries are walls. In reality, healthy boundaries are doors with locks. They allow love, connection, and responsibility to flow in sustainable ways.',
+            'Without boundaries, emotional intelligence collapses under pressure. People taught that being needed means being valuable over-give and silently resent others for taking what was never sustainable to give.'
+          ],
+          callout: 'Boundaries are not punishments. They are forms of self-respect. Freedom is not the absence of limits—it is the presence of the right ones.'
+        },
+        right: {
+          kicker: 'CLEAR BOUNDARY SCRIPTS',
+          heading: 'Guilt Is Not Proof of Wrong',
+          body: [
+            'The first time you set a new boundary, you may feel guilty. That does not mean the boundary is wrong. Often, guilt is just evidence that you are no longer performing a role others benefited from.',
+            'Identify one area where you feel resentment and ask: "What boundary is missing here?"'
+          ],
+          bullets: [
+            '"I’m not available for that conversation right now."',
+            '"I can help with this part, but not the whole thing."',
+            '"Please do not speak to me that way."',
+            '"I need more notice before I commit."'
+          ]
+        },
+        shift: 'From silent resentment and over-extending to sustainable self-respect.',
+        quote: 'Healthy boundaries are doors with locks, not walls. Freedom is not the absence of limits; it is the presence of the right ones.',
+        exercise: 'Identify one area where you feel resentment. Ask: "What boundary is missing here?" Write one clear sentence to express that boundary.',
+        prompts: [
+          'Where in my life am I overextending myself?',
+          'What do I keep saying yes to that drains me?',
+          'What would protecting my peace look like in practice?'
+        ],
+        accent: '#f97316',
+        secondary: '#f59e0b'
+      },
+      {
+        id: 9,
+        type: 'spread',
+        freq: '101.5 FM • GOLDEN RULE 07',
+        chapterLabel: 'Rule 7: The Mood Follows the Motion',
+        left: {
+          kicker: 'GOLDEN RULE SEVEN',
+          heading: 'The Mood Follows the Motion',
+          body: [
+            'Sometimes you cannot think your way into a better state. Sometimes your body must help lead the way. Emotions live in posture, breath, tension, energy, and movement.',
+            'When you move your body, change your environment, or alter sensory input, you send a new signal. Many people wait to feel motivated before they act—EQ teaches that the right action creates the feeling.'
+          ],
+          callout: 'When you shrink physically, you reinforce emotional contraction. When you ground your feet, lift your chest, and breathe deeply, you invite composure.'
+        },
+        right: {
+          kicker: 'YOUR STATE SHIFT LIST',
+          heading: 'Physiology Leads Psychology',
+          body: [
+            'A short walk reduces emotional intensity. Music changes your internal rhythm. Even stepping outside can disrupt a mental spiral.',
+            'Create a personal "state shift list" of five physical actions that reliably help you reset and keep it visible.'
+          ],
+          bullets: [
+            'Dance in your kitchen for three minutes.',
+            'Put on a song that steadies you (try our Theme Song!).',
+            'Take a brisk walk without your phone.',
+            'Sit up straight and ground your feet before a hard talk.'
+          ]
+        },
+        shift: 'From waiting for motivation to using physical motion to reset state.',
+        quote: 'Sometimes you cannot think your way into a better state. Sometimes your body must help lead the way.',
+        exercise: 'Create a personal "state shift list" of five physical actions that reliably help you reset. Keep the list visible and use it before you spiral.',
+        prompts: [
+          'What physical habits reinforce my stress?',
+          'Which environments energize me, and which drain me?',
+          'What movement helps me feel most grounded and clear?'
+        ],
+        accent: '#06b6d4',
+        secondary: '#14b8a6'
+      },
+      {
+        id: 10,
+        type: 'spread',
+        freq: '103.1 FM • GOLDEN RULE 08',
+        chapterLabel: 'Rule 8: Check Your Triggers',
+        left: {
+          kicker: 'GOLDEN RULE EIGHT',
+          heading: 'Check Your Triggers, Change Your Story',
+          body: [
+            'A trigger is not just an overreaction. It is often an unresolved story looking for the slightest reason to replay itself. Triggers happen when present moments touch old wounds, unmet needs, or painful memories.',
+            'A simple comment can feel enormous because it connects to something older: rejection, abandonment, criticism, or loss of control.'
+          ],
+          callout: 'The current moment may be small, but the emotional archive behind it is large. Checking your triggers means asking: What is this really about?'
+        },
+        right: {
+          kicker: 'TRIGGER MAPPING',
+          heading: 'Rewrite the Archive',
+          body: [
+            'Old story: "If someone is upset with me, I am unsafe." New story: "Conflict is uncomfortable, but I can handle honest communication."',
+            'Triggers are invitations—not pleasant ones, but important ones. They reveal where healing is still needed and where a new narrative is possible.'
+          ],
+          bullets: [
+            'What situations trigger me repeatedly?',
+            'What do I fear in those moments?',
+            'What old memory or belief does this resemble?',
+            'Trigger Map: Event → Feeling → Old Memory → New Story.'
+          ]
+        },
+        shift: 'From unconscious flare-ups to pattern awareness and healed narratives.',
+        quote: 'A trigger is not just an overreaction. It is often an unresolved story looking for the slightest reason to replay itself.',
+        exercise: 'Write a short "Trigger Map" for a recent flare-up: 1. What happened • 2. What I felt • 3. What it reminded me of • 4. What story I want to practice instead.',
+        prompts: [
+          'What emotional trigger appears most often in my life?',
+          'What younger version of me might still be responding in that moment?',
+          'What new story would feel more healing and more true?'
+        ],
+        accent: '#a855f7',
+        secondary: '#ec4899'
+      },
+      {
+        id: 11,
+        type: 'spread',
+        freq: '104.9 FM • GOLDEN RULE 09',
+        chapterLabel: 'Rule 9: Respond, Don’t React',
+        left: {
+          kicker: 'GOLDEN RULE NINE',
+          heading: 'Respond, Don’t React',
+          body: [
+            'Reaction is immediate. Response is intentional. Reactivity is expensive—it damages trust, creates unnecessary conflict, and weakens leadership.',
+            'A reactive person gives their nervous system the microphone. A responsive person gives it a seat, but not the whole stage. Tone, posture, facial expression, pace, and timing all shape emotional impact.'
+          ],
+          callout: 'Responding does not mean suppressing emotion. It means integrating emotion with wisdom.'
+        },
+        right: {
+          kicker: 'THE 3 INGREDIENTS OF RESPONSE',
+          heading: 'Move Through With Dignity',
+          body: [
+            'In practice, responding looks like saying, "I want to respond thoughtfully, so let me take a moment," or choosing silence when calm is more powerful than a comeback.',
+            'The goal is not to win every emotional moment. The goal is to move through emotional moments in ways you respect when they are over.'
+          ],
+          bullets: [
+            '1. Awareness of what you are feeling',
+            '2. Alignment with what matters most (your values)',
+            '3. Restraint from acting on the first impulse',
+            'Exercise: Pre-write a calm 2-sentence response script.'
+          ]
+        },
+        shift: 'From nervous-system reactivity to values-aligned composure.',
+        quote: 'A reactive person gives their nervous system the microphone. A responsive person gives it a seat, but not the whole stage.',
+        exercise: 'Choose one high-pressure situation where you tend to react quickly. Write a calm two- or three-sentence "response script" in advance.',
+        prompts: [
+          'Where in my life does reactivity cost me the most?',
+          'What helps me stay grounded under pressure?',
+          'What would a response aligned with my values sound like?'
+        ],
+        accent: '#eab308',
+        secondary: '#14b8a6'
+      },
+      {
+        id: 12,
+        type: 'spread',
+        freq: '106.5 FM • GOLDEN RULE 10',
+        chapterLabel: 'Rule 10: Grow Through What You Go Through',
+        left: {
+          kicker: 'GOLDEN RULE TEN',
+          heading: 'Grow Through What You Go Through',
+          body: [
+            'Pain changes people. The real question is whether pain will harden you, hide you, or help transform you. Some of the deepest emotional intelligence is forged through difficulty—because pain exposes what comfort allows us to ignore.',
+            'A fixed mindset says, "This happened, so I’m broken." A growth mindset says, "This happened, and I am still becoming."'
+          ],
+          callout: 'Healing rarely responds well to harshness. It needs honesty, patience, and self-compassion.'
+        },
+        right: {
+          kicker: 'POST-TRAUMATIC GROWTH & COMPASSION',
+          heading: 'Turn Pain Into Purpose',
+          body: [
+            'Painful experiences, while wounding, can become catalysts for increased meaning, resilience, wisdom, and purpose. Many discover after pain that they are stronger than they knew and less willing to betray themselves.',
+            'You may not have chosen everything you went through. But you can still choose what you grow into.'
+          ],
+          bullets: [
+            '"This is hard, and I’m allowed to admit that."',
+            '"I do not have to have all the answers right now."',
+            '"I can support myself while I learn from this."',
+            'Ask: What did it take? What did it teach? What strength did it forge?'
+          ]
+        },
+        shift: 'From fixed self-judgment to self-compassion and purposeful resilience.',
+        quote: 'You may not have chosen everything you went through. But you can still choose what you grow into.',
+        exercise: 'Write about one difficult experience that shaped you. Answer: What did it take from me? What did it teach me? What strength did it force me to develop?',
+        prompts: [
+          'What pain in my life still needs gentleness instead of judgment?',
+          'How have hard seasons changed me for the better?',
+          'What meaning am I ready to make from what I survived?'
+        ],
+        accent: '#14b8a6',
+        secondary: '#f59e0b'
+      },
+      {
+        id: 13,
+        type: 'spread',
+        freq: '107.9 FM • CONCLUSION',
+        chapterLabel: 'Conclusion: Tune Into the Life You Want',
+        left: {
+          kicker: 'CONCLUSION • EMOTIONAL HYGIENE',
+          heading: 'Tune Into the Life You Want',
+          body: [
+            'Emotional intelligence is not one skill—it is a way of living. These ten golden rules are not a checklist you master once; they are a daily rhythm you return to.',
+            'This is emotional hygiene. Just as you care for your body through sleep, movement, and nourishment, your emotional life needs daily care so stress does not accumulate and self-trust stays strong.'
+          ],
+          callout: 'You are the emotional DJ of your life. Not every song that plays deserves to become your anthem. Not every thought deserves belief.'
+        },
+        right: {
+          kicker: 'TURN UP POSSIBILITY',
+          heading: 'Your Agency & Choice',
+          body: [
+            'When fear is loud, you can choose grounding. When shame is loud, you can choose truth. When anger is loud, you can choose wisdom. When possibility is quiet, you can turn it up.',
+            'Tune into that life. It is already waiting for you.'
+          ],
+          bullets: [
+            'Name what you feel • Pause before acting',
+            'Feelings are information • Reframe the script',
+            'Practice empathy • Set boundaries • Use motion',
+            'Study triggers • Respond with intention • Grow through pain'
+          ]
+        },
+        shift: 'From passive listener to the intentional Emotional DJ of your life.',
+        quote: 'You are the emotional DJ of your life. Not every song that plays deserves to become your anthem. When possibility is quiet, turn it up.',
+        exercise: 'Open the EQ Companion Workbook tab to set your Morning Reset, Midday Check-In, and Evening Reflection.',
+        prompts: [
+          'Which channel am I turning down this week (fear, shame, anger)?',
+          'Where is possibility quiet in my life right now—and how can I turn it up?'
+        ],
+        accent: '#f59e0b',
+        secondary: '#14b8a6'
+      },
+      {
+        id: 14,
+        type: 'spread',
+        freq: '108.0 FM • BONUS & FINALE',
+        chapterLabel: 'Bonus Features & Final Encouragement',
+        left: {
+          kicker: '6 BONUS FEATURES INCLUDED',
+          heading: 'EQ Toolkit & Style Archetypes',
+          body: [
+            'Bonus 1: 10-Item EQ Self-Assessment (Score 10–50) • Bonus 2: Daily Channel Changer Exercises (Morning, Midday, Evening) • Bonus 3: 7 Guided Journaling Prompts • Bonus 4: QR Audio Meditations & Emotion Wheel • Bonus 5: 30-Day Challenge & 5 Course Modules.',
+            'Bonus 6: What’s Your Emotional Channel Style? Discover your archetype in the EQ Quiz tab.'
+          ],
+          bullets: [
+            'The Reflective Regulator — Strong pause muscles',
+            'The Empathic Connector — Deeply attuned; protect your energy',
+            'The Triggered Achiever — High-performing; master triggers',
+            'The Boundary Builder & The Resilient Reframer'
+          ]
+        },
+        right: {
+          kicker: 'FINAL ENCOURAGEMENT',
+          heading: 'That Is How You Change the Channel',
+          body: [
+            'You do not need to become emotionless to become powerful.',
+            'You do not need to stop feeling deeply to live wisely.',
+            'You simply need to build the skill of noticing what is playing within you—and learning how to choose your next move with intention.',
+            'That is the work. That is the freedom. That is how you change the channel. — Darnell E. Clark'
+          ],
+          callout: 'Open the EQ Companion Drawer on the top right to take the full 10-question EQ Self-Assessment and claim your Emotional Channel Style.'
+        },
+        shift: 'Full integration: Self-Assessment, Daily Hygiene, and Channel Mastery.',
+        quote: 'You do not need to become emotionless to become powerful. You do not need to stop feeling deeply to live wisely. That is how you change the channel.',
+        exercise: 'Take the 10-Item EQ Self-Assessment in the EQ Quiz tab to get your score (10–50) and Emotional Channel Style.',
+        prompts: [
+          'Which Emotional Channel Style resonates most with me today?',
+          'What is my #1 commitment for the next 30 days of emotional hygiene?'
+        ],
+        accent: '#14b8a6',
+        secondary: '#f59e0b'
       }
-      document.getElementById('next').addEventListener('click', () => {
-        position = Math.min(pages.length, position + 1); update();
-      });
-      document.getElementById('prev').addEventListener('click', () => {
-        position = Math.max(0, position - 1); update();
+    ];
+
+    const GRANULAR_EMOTIONS = [
+      { word: 'Overwhelmed', base: 'Stressed', insight: 'Signal: Too many inputs at once. Action: Rule #2 Pause + Rule #6 Boundary on one non-essential task.' },
+      { word: 'Disappointed', base: 'Mad/Sad', insight: 'Signal: Unmet expectation. Action: Rule #3 Separate objective fact from the story you assigned.' },
+      { word: 'Overlooked', base: 'Hurt', insight: 'Signal: Need for recognition or voice. Action: Rule #1 Name it clearly and communicate needs.' },
+      { word: 'Overstimulated', base: 'Anxious', insight: 'Signal: Nervous system overload. Action: Rule #7 Step outside or take a 3-minute movement break.' },
+      { word: 'Resentful', base: 'Angry', insight: 'Signal: A missing boundary. Action: Rule #6 Identify where you over-gave and write a boundary script.' },
+      { word: 'Guilty vs. Ashamed', base: 'Bad', insight: 'Signal: Guilt = value conflict (repairable); Shame = "I am the problem" (Rule #4 Flip the Script).' },
+      { word: 'Underprepared', base: 'Anxious', insight: 'Signal: Need for structure or clarity. Action: Rule #9 Pause, prioritize one step, and prepare.' },
+      { word: 'Grounded & Clear', base: 'Good', insight: 'Signal: Aligned with values. Action: Conclusion — Anchor this channel as your daily baseline.' }
+    ];
+
+    const EQ_ASSESSMENT_ITEMS = [
+      { id: 1, rule: 'Rule 1', text: 'I can accurately identify what I am feeling.', style: 'Reflective Regulator' },
+      { id: 2, rule: 'Rule 2', text: 'I pause before responding when emotions run high.', style: 'Reflective Regulator' },
+      { id: 3, rule: 'Rule 3', text: 'I can separate emotional reactions from objective facts.', style: 'Reflective Regulator' },
+      { id: 4, rule: 'Rule 4', text: 'I notice and challenge negative self-talk.', style: 'Resilient Reframer' },
+      { id: 5, rule: 'Rule 5', text: 'I try to understand other people’s feelings and perspectives.', style: 'Empathic Connector' },
+      { id: 6, rule: 'Rule 6', text: 'I communicate my boundaries clearly and respectfully.', style: 'Boundary Builder' },
+      { id: 7, rule: 'Rule 7', text: 'I use healthy physical habits to reset my mood.', style: 'Triggered Achiever' },
+      { id: 8, rule: 'Rule 8', text: 'I recognize my recurring emotional triggers.', style: 'Triggered Achiever' },
+      { id: 9, rule: 'Rule 9', text: 'I respond thoughtfully in high-pressure situations.', style: 'Triggered Achiever' },
+      { id: 10, rule: 'Rule 10', text: 'I reflect on painful experiences in ways that help me grow.', style: 'Resilient Reframer' }
+    ];
+
+    const CHANNEL_STYLE_PROFILES = {
+      'Reflective Regulator': {
+        title: 'The Reflective Regulator',
+        desc: 'Thoughtful and deliberate—you have built strong pause muscles (Rules #1–#3). Keep modeling steady clarity and helping others slow down before reacting.'
+      },
+      'Empathic Connector': {
+        title: 'The Empathic Connector',
+        desc: 'You feel others deeply and build genuine bridges of trust (Rule #5). Your next growth edge is pairing empathy with firm boundaries so you protect your own energy.'
+      },
+      'Triggered Achiever': {
+        title: 'The Triggered Achiever',
+        desc: 'High-performing and driven, yet vulnerable to fast reactivity under pressure (Rules #7–#9). Your triggers and 90-second pauses are your next frontier.'
+      },
+      'Boundary Builder': {
+        title: 'The Boundary Builder',
+        desc: 'You are learning to say no with self-respect—and discovering true freedom in it (Rule #6). Remember that healthy boundaries are doors with locks, not walls.'
+      },
+      'Resilient Reframer': {
+        title: 'The Resilient Reframer',
+        desc: 'You find meaning in difficulty and rewrite self-limiting scripts (Rules #4 & #10). That capacity to turn pain into purpose is rare and powerful.'
+      }
+    };
+
+    // =========================================================================
+    // 2. HIGH-DPI PROCEDURAL BOOK TEXTURE RENDERER
+    // =========================================================================
+    const TEX_W = 1024;
+    const TEX_H = 1440;
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      let curY = y;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line.trim(), x, curY);
+          line = words[n] + ' ';
+          curY += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line.trim(), x, curY);
+      return curY + lineHeight;
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function createCoverTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = TEX_W;
+      canvas.height = TEX_H;
+      const ctx = canvas.getContext('2d');
+
+      const bg = ctx.createLinearGradient(0, 0, TEX_W, TEX_H);
+      bg.addColorStop(0, '#091124');
+      bg.addColorStop(0.5, '#0f253d');
+      bg.addColorStop(1, '#081a24');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, TEX_W, TEX_H);
+
+      ctx.save();
+      for (let i = 1; i <= 7; i++) {
+        ctx.beginPath();
+        ctx.arc(TEX_W * 0.5, TEX_H * 0.44, i * 68, 0, Math.PI * 2);
+        ctx.strokeStyle = i % 2 === 0 ? 'rgba(245, 158, 11, 0.14)' : 'rgba(20, 184, 166, 0.14)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 6;
+      drawRoundRect(ctx, 44, 44, TEX_W - 88, TEX_H - 88, 28);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(20, 184, 166, 0.5)';
+      ctx.lineWidth = 2;
+      drawRoundRect(ctx, 62, 62, TEX_W - 124, TEX_H - 124, 20);
+      ctx.stroke();
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '700 22px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PENGAME PUBLISHING • INTERACTIVE 3D EDITION', TEX_W / 2, 128);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 108px "Cormorant Garamond", Georgia, serif';
+      ctx.fillText('CHANGING', TEX_W / 2, 260);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('THE CHANNEL', TEX_W / 2, 360);
+
+      const cx = TEX_W / 2;
+      const cy = 640;
+
+      const aura = ctx.createRadialGradient(cx, cy, 20, cx, cy, 230);
+      aura.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
+      aura.addColorStop(0.55, 'rgba(20, 184, 166, 0.22)');
+      aura.addColorStop(1, 'rgba(9, 17, 36, 0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 230, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawRoundRect(ctx, cx - 175, cy - 135, 350, 250, 36);
+      ctx.fillStyle = 'rgba(7, 13, 28, 0.92)';
+      ctx.fill();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.stroke();
+
+      ctx.beginPath();
+      for (let x = -135; x <= 135; x += 4) {
+        const y = Math.sin(x * 0.055) * 38 * Math.cos(x * 0.015);
+        if (x === -135) ctx.moveTo(cx + x, cy - 10 + y);
+        else ctx.lineTo(cx + x, cy - 10 + y);
+      }
+      ctx.strokeStyle = '#2dd4bf';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('CH 10 • CLARITY & PEACE', cx, cy + 78);
+
+      const badges = [
+        { label: 'PAUSE', x: cx - 235, y: cy - 110, col: '#14b8a6' },
+        { label: 'EMPATHY', x: cx + 235, y: cy - 110, col: '#f59e0b' },
+        { label: 'BOUNDARIES', x: cx - 235, y: cy + 120, col: '#38bdf8' },
+        { label: 'GROWTH', x: cx + 235, y: cy + 120, col: '#fb923c' }
+      ];
+      badges.forEach(b => {
+        drawRoundRect(ctx, b.x - 82, b.y - 22, 164, 44, 22);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fill();
+        ctx.strokeStyle = b.col;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '700 17px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(b.label, b.x, b.y + 6);
       });
 
-      let dragging = false, startX = 0, startY = 0, yaw = -14, pitch = 8;
-      book.addEventListener('pointerdown', event => {
-        dragging = true; startX = event.clientX; startY = event.clientY;
-        book.classList.add('dragging'); book.setPointerCapture(event.pointerId);
-      });
-      book.addEventListener('pointermove', event => {
-        if (!dragging) return;
-        yaw += (event.clientX - startX) * .12;
-        pitch -= (event.clientY - startY) * .08;
-        pitch = Math.max(-25, Math.min(35, pitch));
-        book.style.transform = `rotateX(${pitch}deg) rotateY(${yaw}deg)`;
-        startX = event.clientX; startY = event.clientY;
-      });
-      book.addEventListener('pointerup', () => {
-        dragging = false; book.classList.remove('dragging');
+      drawRoundRect(ctx, 110, 910, TEX_W - 220, 128, 20);
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.14)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#fde68a';
+      ctx.font = '600 32px "Cormorant Garamond", Georgia, serif';
+      ctx.fillText('The 10 Golden Rules of Emotional Intelligence', TEX_W / 2, 962);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '400 21px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Mastering emotions, boosting self-awareness & living with purpose', TEX_W / 2, 1006);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 44px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('DARNELL E. CLARK', TEX_W / 2, 1155);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '500 19px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('PenGame Publishing, LLC • Atlanta, GA • © 2026 All Rights Reserved', TEX_W / 2, 1295);
+      ctx.fillStyle = '#2dd4bf';
+      ctx.font = '600 18px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('TAP COVER TO TUNE IN →', TEX_W / 2, 1345);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    function createBackCoverTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = TEX_W;
+      canvas.height = TEX_H;
+      const ctx = canvas.getContext('2d');
+
+      const bg = ctx.createLinearGradient(0, 0, TEX_W, TEX_H);
+      bg.addColorStop(0, '#081224');
+      bg.addColorStop(1, '#0c2330');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, TEX_W, TEX_H);
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 5;
+      drawRoundRect(ctx, 48, 48, TEX_W - 96, TEX_H - 96, 24);
+      ctx.stroke();
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '700 22px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('YOU HOLD THE REMOTE', TEX_W / 2, 145);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 56px "Cormorant Garamond", Georgia, serif';
+      ctx.fillText('Change the Channel.', TEX_W / 2, 230);
+      ctx.fillText('Change Your Life.', TEX_W / 2, 295);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '400 26px "Plus Jakarta Sans", sans-serif';
+      let y = 390;
+      const paragraphs = [
+        'Every day, dozens of emotional channels broadcast inside your mind—fear, frustration, urgency, self-doubt, possibility, and peace.',
+        'In Changing the Channel, Darnell E. Clark delivers 10 practical, battle-tested Golden Rules to help you name what you feel, pause before reacting, set healthy boundaries, and turn pain into purpose.',
+        'Includes the complete EQ Self-Assessment, Daily Channel Changer Exercises, Guided Journaling Prompts, and Emotional Channel Style Quiz.'
+      ];
+      paragraphs.forEach(p => {
+        y = wrapText(ctx, p, 110, y, TEX_W - 220, 40) + 26;
       });
 
-      let xrSession = null;
-      if (navigator.xr) {
-        navigator.xr.isSessionSupported('immersive-vr').then(supported => {
-          xrButton.hidden = !supported;
+      drawRoundRect(ctx, 110, 980, TEX_W - 220, 260, 20);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('PENGAME PUBLISHING, LLC', TEX_W / 2, 1038);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '400 20px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('260 Peachtree Street NW, Suite 2229 • Atlanta, GA 30303', TEX_W / 2, 1085);
+      ctx.fillText('770-585-4678 • Info@Pengamepublishing.com', TEX_W / 2, 1122);
+      ctx.fillText('www.pengamepublishing.com', TEX_W / 2, 1159);
+      ctx.fillStyle = '#2dd4bf';
+      ctx.font = '600 19px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Copyright © 2026 Darnell E. Clark. All rights reserved.', TEX_W / 2, 1205);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    function createPageTexture(pageData, side, spreadIndex, accentColor) {
+      const canvas = document.createElement('canvas');
+      canvas.width = TEX_W;
+      canvas.height = TEX_H;
+      const ctx = canvas.getContext('2d');
+
+      const paperGrad = ctx.createLinearGradient(
+        side === 'left' ? 0 : TEX_W,
+        0,
+        side === 'left' ? TEX_W : 0,
+        0
+      );
+      paperGrad.addColorStop(0, '#faf6ee');
+      paperGrad.addColorStop(0.88, '#f6efe2');
+      paperGrad.addColorStop(1, '#e6dccb');
+      ctx.fillStyle = paperGrad;
+      ctx.fillRect(0, 0, TEX_W, TEX_H);
+
+      ctx.fillStyle = accentColor || '#d97706';
+      ctx.fillRect(side === 'left' ? 70 : 90, 68, 120, 6);
+
+      const marginL = side === 'left' ? 74 : 96;
+      const marginR = side === 'left' ? 96 : 74;
+      const contentW = TEX_W - marginL - marginR;
+
+      ctx.fillStyle = '#78716c';
+      ctx.font = '700 18px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(pageData.kicker || 'CHANGING THE CHANNEL', marginL, 112);
+
+      const pageNum = side === 'left' ? spreadIndex * 2 - 1 : spreadIndex * 2;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#a8a29e';
+      ctx.fillText(`CH ${String(spreadIndex).padStart(2, '0')} • P.${pageNum}`, TEX_W - marginR, 112);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#1c1917';
+      ctx.font = '700 52px "Cormorant Garamond", Georgia, serif';
+      let y = wrapText(ctx, pageData.heading, marginL, 185, contentW, 58) + 14;
+
+      ctx.strokeStyle = 'rgba(28, 25, 23, 0.14)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(marginL, y);
+      ctx.lineTo(marginL + contentW, y);
+      ctx.stroke();
+      y += 42;
+
+      if (pageData.body && pageData.body.length) {
+        ctx.fillStyle = '#292524';
+        ctx.font = '400 25px "Plus Jakarta Sans", sans-serif';
+        pageData.body.forEach(para => {
+          y = wrapText(ctx, para, marginL, y, contentW, 38) + 24;
         });
       }
-      xrButton.addEventListener('click', async () => {
-        if (xrSession) { await xrSession.end(); return; }
-        xrSession = await navigator.xr.requestSession('immersive-vr', {
-          requiredFeatures: ['local-floor']
+
+      if (pageData.callout) {
+        y += 8;
+        const boxH = 185;
+        drawRoundRect(ctx, marginL, y, contentW, boxH, 16);
+        ctx.fillStyle = 'rgba(217, 119, 6, 0.10)';
+        ctx.fill();
+        ctx.fillStyle = accentColor || '#d97706';
+        ctx.fillRect(marginL, y + 14, 8, boxH - 28);
+
+        ctx.fillStyle = '#1c1917';
+        ctx.font = 'italic 600 28px "Cormorant Garamond", Georgia, serif';
+        wrapText(ctx, `"${pageData.callout}"`, marginL + 28, y + 48, contentW - 48, 36);
+        y += boxH + 32;
+      }
+
+      if (pageData.bullets && pageData.bullets.length) {
+        y += 6;
+        ctx.fillStyle = '#0f766e';
+        ctx.font = '700 19px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('KEY CHANNEL SHIFTS & ACTION STEPS', marginL, y);
+        y += 34;
+
+        pageData.bullets.forEach(b => {
+          ctx.fillStyle = accentColor || '#d97706';
+          ctx.beginPath();
+          ctx.arc(marginL + 10, y - 8, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#1c1917';
+          ctx.font = '500 22px "Plus Jakarta Sans", sans-serif';
+          y = wrapText(ctx, b, marginL + 28, y, contentW - 28, 32) + 14;
         });
-        xrButton.textContent = 'Exit XR';
-        xrSession.addEventListener('end', () => {
-          xrSession = null; xrButton.textContent = 'Enter XR';
+      }
+
+      ctx.fillStyle = '#a8a29e';
+      ctx.font = '500 17px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Changing the Channel • Darnell E. Clark • PenGame Publishing', TEX_W / 2, TEX_H - 54);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    const coverTex = createCoverTexture();
+    const backCoverTex = createBackCoverTexture();
+    const spreadTextures = BOOK_SPREADS.map((sp, idx) => {
+      try {
+        if (sp.type === 'cover') {
+          return { left: backCoverTex, right: coverTex };
+        }
+        return {
+          left: createPageTexture(sp.left, 'left', idx, sp.accent),
+          right: createPageTexture(sp.right, 'right', idx, sp.secondary)
+        };
+      } catch (err) {
+        console.warn('Texture fallback for spread', idx, err);
+        return { left: backCoverTex, right: coverTex };
+      }
+    });
+
+    // =========================================================================
+    // 3. PROCEDURAL WEB AUDIO ENGINE ("CHANGING THE CHANNEL" SONG + RELAXING MUSIC)
+    // =========================================================================
+    const MUSIC_TRACKS = [
+      {
+        id: 'theme-song',
+        title: 'Changing the Channel (Official Theme Song)',
+        subtitle: '88.0 FM • Soulful Rhodes & Uplifting Melody',
+        desc: 'Original musical anthem composed for Darnell E. Clark’s 10 Golden Rules—warm Cmaj9–Am9–Fmaj9–G13 chords, gentle pulse, and singing lead melody.',
+        bpm: 76,
+        type: 'song',
+        lyrics: [
+          '♪ Noise in the static, storm in the mind...',
+          '♪ Name what you’re feeling, take a breath and see...',
+          '♪ Change the channel, turn the dial to grace...',
+          '♪ Step out the chaos into steady space...',
+          '♪ You hold the remote, you choose what stays on...',
+          '♪ Pause before you play, let the truth ring clear...',
+          '♪ You are the DJ of the life you lead...',
+          '♪ Tune into wisdom, let your spirit breathe...'
+        ]
+      },
+      {
+        id: 'ocean-calm',
+        title: 'Ocean Calm & 432Hz Horizon',
+        subtitle: 'Rule #2 • Nervous System Reset',
+        desc: 'Slow rolling surf waves layered over a warm 432Hz harmonic pad to lengthen your exhale.',
+        bpm: 60,
+        type: 'ocean',
+        lyrics: [
+          'Breathe in for 4 counts... exhale for 6...',
+          'The pause is where your power lives.',
+          'Let the first emotional wave pass gently...',
+          'From chaos to clarity, reaction to response.'
+        ]
+      },
+      {
+        id: 'gentle-rain',
+        title: 'Gentle Rain on Glass',
+        subtitle: 'Rule #1 • Quiet Clarity & Focus',
+        desc: 'Soft rainfall textures paired with delicate celesta droplets for journaling and reflection.',
+        bpm: 64,
+        type: 'rain',
+        lyrics: [
+          'Name it to tame it — precision creates choice.',
+          'Observe the feeling without becoming the storm.',
+          'Every emotion is a messenger carrying insight.',
+          'Your inner atmosphere belongs to you.'
+        ]
+      },
+      {
+        id: 'fireplace-glow',
+        title: 'Warm Ember & Piano Nocturne',
+        subtitle: 'Rule #10 • Self-Compassion & Renewal',
+        desc: 'Intimate felt-piano arpeggios with gentle hearth warmth for evening reflection.',
+        bpm: 66,
+        type: 'piano',
+        lyrics: [
+          'This is hard, and I am allowed to admit that.',
+          'Grow through what you go through.',
+          'Boundaries are doors with locks, not walls.',
+          'Tune into the life waiting for you.'
+        ]
+      },
+      {
+        id: 'deep-space',
+        title: 'Deep Space Frequency Sanctuary',
+        subtitle: 'Rule #7 • Grounded Presence',
+        desc: 'Expansive celestial drones and crystal singing-bowl overtones for deep VR immersion.',
+        bpm: 56,
+        type: 'space',
+        lyrics: [
+          'You are the emotional DJ of your life.',
+          'When fear is loud, turn up grounding.',
+          'When possibility is quiet, turn it up.',
+          'Steady, clear, and anchored in meaning.'
+        ]
+      }
+    ];
+
+    let audioCtx = null;
+    let musicMasterGain = null;
+    let isAmbientPlaying = false;
+    let currentMusicTrackIdx = 0;
+    let musicVolume = 0.65;
+    let musicStepTimer = null;
+    let musicStepCount = 0;
+    let ambientNoiseNode = null;
+    let ambientDroneOscs = [];
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return null;
+        audioCtx = new AudioCtor();
+        musicMasterGain = audioCtx.createGain();
+        musicMasterGain.gain.value = musicVolume * 0.42;
+        musicMasterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playPaperFlipSound() {
+      try {
+        ensureAudioContext();
+        const now = audioCtx.currentTime;
+        const duration = 0.24;
+        const bufferSize = Math.floor(audioCtx.sampleRate * duration);
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          const env = Math.sin((i / bufferSize) * Math.PI);
+          data[i] = (Math.random() * 2 - 1) * env * 0.35;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(900, now);
+        filter.frequency.exponentialRampToValueAtTime(2400, now + duration);
+        filter.Q.value = 1.4;
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.22, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+      } catch (e) {}
+    }
+
+    function playChimeSound() {
+      try {
+        ensureAudioContext();
+        const now = audioCtx.currentTime;
+        [528, 792, 1056].forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.04);
+          gain.gain.linearRampToValueAtTime(0.09 / (idx + 1), now + idx * 0.04 + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + 2.4);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.04);
+          osc.stop(now + 2.5);
         });
+      } catch (e) {}
+    }
+
+    function stopAmbientEngine() {
+      if (musicStepTimer) {
+        clearInterval(musicStepTimer);
+        musicStepTimer = null;
+      }
+      if (ambientNoiseNode) {
+        try { ambientNoiseNode.stop(); ambientNoiseNode.disconnect(); } catch (e) {}
+        ambientNoiseNode = null;
+      }
+      ambientDroneOscs.forEach((o) => {
+        try { o.stop(); o.disconnect(); } catch (e) {}
       });
-    </script>
-  </body>
+      ambientDroneOscs = [];
+    }
+
+    function triggerWarmChord(freqs, durationSec, waveType = 'triangle', peakGain = 0.09) {
+      if (!audioCtx || !musicMasterGain) return;
+      const now = audioCtx.currentTime;
+      freqs.forEach((f, idx) => {
+        const osc = audioCtx.createOscillator();
+        const sub = audioCtx.createOscillator();
+        const filter = audioCtx.createBiquadFilter();
+        const gain = audioCtx.createGain();
+
+        osc.type = waveType;
+        osc.frequency.setValueAtTime(f, now);
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(f * 2, now);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1150, now);
+        filter.frequency.exponentialRampToValueAtTime(420, now + durationSec);
+
+        const subGain = audioCtx.createGain();
+        subGain.gain.value = 0.22;
+
+        gain.gain.setValueAtTime(0.0008, now + idx * 0.025);
+        gain.gain.linearRampToValueAtTime(peakGain, now + idx * 0.025 + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + durationSec);
+
+        osc.connect(filter);
+        sub.connect(subGain);
+        subGain.connect(filter);
+        filter.connect(gain);
+        gain.connect(musicMasterGain);
+
+        osc.start(now + idx * 0.025);
+        sub.start(now + idx * 0.025);
+        osc.stop(now + durationSec + 0.05);
+        sub.stop(now + durationSec + 0.05);
+      });
+    }
+
+    function triggerSongLeadNote(freq, durationSec, peakGain = 0.11) {
+      if (!audioCtx || !musicMasterGain || !freq) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const harm = audioCtx.createOscillator();
+      const filter = audioCtx.createBiquadFilter();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      harm.type = 'triangle';
+      harm.frequency.setValueAtTime(freq * 1.002, now);
+
+      const harmGain = audioCtx.createGain();
+      harmGain.gain.value = 0.28;
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1600, now);
+
+      gain.gain.setValueAtTime(0.0008, now);
+      gain.gain.linearRampToValueAtTime(peakGain, now + 0.045);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + durationSec);
+
+      osc.connect(filter);
+      harm.connect(harmGain);
+      harmGain.connect(filter);
+      filter.connect(gain);
+      gain.connect(musicMasterGain);
+
+      osc.start(now);
+      harm.start(now);
+      osc.stop(now + durationSec + 0.04);
+      harm.stop(now + durationSec + 0.04);
+    }
+
+    function startTrackAudio(trackIdx) {
+      stopAmbientEngine();
+      ensureAudioContext();
+      const track = MUSIC_TRACKS[trackIdx];
+      musicStepCount = 0;
+
+      if (track.type === 'ocean' || track.type === 'rain') {
+        const bufferSize = audioCtx.sampleRate * 4;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let lastOut = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          data[i] = (lastOut + 0.03 * white) / 1.03;
+          lastOut = data[i];
+          data[i] *= track.type === 'ocean' ? 1.8 : 1.1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = track.type === 'ocean' ? 420 : 1250;
+
+        const bedGain = audioCtx.createGain();
+        bedGain.gain.value = track.type === 'ocean' ? 0.26 : 0.14;
+
+        noise.connect(filter);
+        filter.connect(bedGain);
+        bedGain.connect(musicMasterGain);
+        noise.start();
+        ambientNoiseNode = noise;
+      }
+
+      const padFreqs = track.type === 'space' ? [108, 162, 216, 324] : [130.81, 196.0, 246.94];
+      padFreqs.forEach((f) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        g.gain.value = track.type === 'space' ? 0.055 : 0.025;
+        osc.connect(g);
+        g.connect(musicMasterGain);
+        osc.start();
+        ambientDroneOscs.push(osc);
+      });
+
+      const songChords = [
+        [130.81, 246.94, 293.66, 329.63, 392.0],
+        [110.00, 220.00, 261.63, 329.63, 392.0],
+        [87.31,  174.61, 220.00, 261.63, 329.63],
+        [98.00,  196.00, 246.94, 293.66, 349.23]
+      ];
+      const songMelody = [
+        523.25, 493.88, 392.00, 440.00,
+        523.25, 587.33, 659.25, 0,
+        587.33, 523.25, 440.00, 392.00,
+        440.00, 493.88, 392.00, 0
+      ];
+
+      const stepMs = Math.round((60 / track.bpm) * 1000);
+
+      const runStep = () => {
+        if (!isAmbientPlaying) return;
+        const barIdx = Math.floor(musicStepCount / 4) % 4;
+        const beatInBar = musicStepCount % 4;
+        const step16 = musicStepCount % 16;
+
+        if (track.type === 'song') {
+          if (beatInBar === 0) {
+            triggerWarmChord(songChords[barIdx], (stepMs * 4) / 1000, 'triangle', 0.085);
+          }
+          const note = songMelody[step16];
+          if (note > 0) {
+            triggerSongLeadNote(note, (stepMs * 1.35) / 1000, 0.115);
+          }
+        } else {
+          if (beatInBar === 0) {
+            triggerWarmChord(songChords[barIdx].slice(1), (stepMs * 4.2) / 1000, 'sine', 0.065);
+          } else if (beatInBar === 2 && track.type !== 'space') {
+            const bellNotes = [523.25, 587.33, 659.25, 783.99, 880.0];
+            const pick = bellNotes[(musicStepCount + barIdx) % bellNotes.length];
+            triggerSongLeadNote(pick, 2.2, 0.045);
+          }
+        }
+
+        if (beatInBar === 0) {
+          const lyricIdx = Math.floor(musicStepCount / 4) % track.lyrics.length;
+          const lyricText = track.lyrics[lyricIdx];
+          const miniLyric = document.getElementById('mini-track-lyric');
+          const studioLyric = document.getElementById('studio-lyric-line');
+          if (miniLyric) miniLyric.textContent = lyricText;
+          if (studioLyric) studioLyric.textContent = lyricText;
+        }
+
+        musicStepCount++;
+      };
+
+      runStep();
+      musicStepTimer = setInterval(runStep, stepMs);
+    }
+
+    function syncMusicUI() {
+      const track = MUSIC_TRACKS[currentMusicTrackIdx];
+      const audioBtn = document.getElementById('btn-audio');
+      const audioIcon = document.getElementById('audio-icon');
+      const discIcon = document.getElementById('song-disc-icon');
+      const miniTag = document.getElementById('mini-track-tag');
+      const miniTitle = document.getElementById('mini-track-title');
+      const miniIcon = document.getElementById('mini-play-icon');
+      const studioName = document.getElementById('studio-track-name');
+      const studioDesc = document.getElementById('studio-track-desc');
+      const studioBadge = document.getElementById('studio-playing-badge');
+      const studioPlayIcon = document.getElementById('studio-play-icon');
+      const studioPlayText = document.getElementById('studio-play-text');
+
+      if (miniTitle) miniTitle.textContent = track.title;
+      if (studioName) studioName.textContent = track.title;
+      if (studioDesc) studioDesc.textContent = track.desc;
+
+      if (isAmbientPlaying) {
+        audioBtn?.classList.add('border-teal-400/60', 'bg-teal-500/20', 'text-teal-200');
+        if (audioIcon) audioIcon.className = 'fa-solid fa-volume-high text-teal-300';
+        if (discIcon && track.id === 'theme-song') discIcon.classList.add('fa-spin');
+        else discIcon?.classList.remove('fa-spin');
+        if (miniTag) miniTag.textContent = track.id === 'theme-song' ? 'NOW PLAYING • THEME SONG' : 'NOW PLAYING • RELAXING';
+        if (miniIcon) miniIcon.className = 'fa-solid fa-pause';
+        if (studioBadge) {
+          studioBadge.textContent = 'Playing Live';
+          studioBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+        }
+        if (studioPlayIcon) studioPlayIcon.className = 'fa-solid fa-pause';
+        if (studioPlayText) studioPlayText.textContent = 'Pause Music';
+      } else {
+        audioBtn?.classList.remove('border-teal-400/60', 'bg-teal-500/20', 'text-teal-200');
+        if (audioIcon) audioIcon.className = 'fa-solid fa-music text-teal-300';
+        discIcon?.classList.remove('fa-spin');
+        if (miniTag) miniTag.textContent = 'SOUNDTRACK READY';
+        if (miniIcon) miniIcon.className = 'fa-solid fa-play ml-0.5';
+        if (studioBadge) {
+          studioBadge.textContent = 'Paused';
+          studioBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300';
+        }
+        if (studioPlayIcon) studioPlayIcon.className = 'fa-solid fa-play';
+        if (studioPlayText) studioPlayText.textContent = 'Play Music';
+      }
+      renderMusicTrackList();
+    }
+
+    function renderMusicTrackList() {
+      const container = document.getElementById('music-track-list');
+      if (!container) return;
+      container.innerHTML = MUSIC_TRACKS.map((t, idx) => {
+        const active = idx === currentMusicTrackIdx;
+        return `
+          <button onclick="window.selectMusicTrack(${idx}, true)" class="w-full text-left p-3 rounded-xl border transition flex items-center justify-between gap-3 ${active ? 'bg-amber-500/15 border-amber-400/50 text-white' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}">
+            <div class="min-w-0">
+              <div class="text-xs font-bold ${active ? 'text-amber-200' : 'text-white'} truncate">
+                ${t.id === 'theme-song' ? '<i class="fa-solid fa-star text-amber-400 mr-1"></i>' : ''}${t.title}
+              </div>
+              <div class="text-[11px] text-slate-400 truncate">${t.subtitle}</div>
+            </div>
+            <span class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${active && isAmbientPlaying ? 'bg-amber-400 text-slate-950' : 'bg-white/10 text-slate-200'}">
+              <i class="fa-solid ${active && isAmbientPlaying ? 'fa-pause' : 'fa-play'} text-[10px]"></i>
+            </span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    window.selectMusicTrack = function(idx, autoPlay = true) {
+      currentMusicTrackIdx = (idx + MUSIC_TRACKS.length) % MUSIC_TRACKS.length;
+      if (autoPlay) {
+        isAmbientPlaying = true;
+        startTrackAudio(currentMusicTrackIdx);
+      } else if (isAmbientPlaying) {
+        startTrackAudio(currentMusicTrackIdx);
+      }
+      syncMusicUI();
+      showToast(`Tuned to: ${MUSIC_TRACKS[currentMusicTrackIdx].title}`);
+    };
+
+    function toggleAmbientSoundscape(forcePlay = false) {
+      if (forcePlay && !isAmbientPlaying) {
+        isAmbientPlaying = true;
+        startTrackAudio(currentMusicTrackIdx);
+      } else if (!forcePlay) {
+        isAmbientPlaying = !isAmbientPlaying;
+        if (isAmbientPlaying) {
+          startTrackAudio(currentMusicTrackIdx);
+          showToast(`Playing: ${MUSIC_TRACKS[currentMusicTrackIdx].title}`);
+        } else {
+          stopAmbientEngine();
+          showToast('Music Paused');
+        }
+      }
+      syncMusicUI();
+    }
+
+    document.getElementById('btn-audio').addEventListener('click', () => toggleAmbientSoundscape(false));
+    document.getElementById('btn-theme-song').addEventListener('click', () => {
+      if (currentMusicTrackIdx === 0 && isAmbientPlaying) {
+        toggleAmbientSoundscape(false);
+      } else {
+        window.selectMusicTrack(0, true);
+      }
+    });
+    document.getElementById('mini-play-toggle')?.addEventListener('click', () => toggleAmbientSoundscape(false));
+    document.getElementById('mini-prev-track')?.addEventListener('click', () => window.selectMusicTrack(currentMusicTrackIdx - 1, true));
+    document.getElementById('mini-next-track')?.addEventListener('click', () => window.selectMusicTrack(currentMusicTrackIdx + 1, true));
+    document.getElementById('mini-open-studio')?.addEventListener('click', () => {
+      document.getElementById('companion-drawer').classList.remove('translate-x-full');
+      switchCompanionTab('music');
+    });
+    document.getElementById('studio-play-btn')?.addEventListener('click', () => toggleAmbientSoundscape(false));
+    document.getElementById('studio-prev-btn')?.addEventListener('click', () => window.selectMusicTrack(currentMusicTrackIdx - 1, true));
+    document.getElementById('studio-next-btn')?.addEventListener('click', () => window.selectMusicTrack(currentMusicTrackIdx + 1, true));
+    document.getElementById('music-volume-slider')?.addEventListener('input', (e) => {
+      musicVolume = parseInt(e.target.value, 10) / 100;
+      if (musicMasterGain && audioCtx) {
+        musicMasterGain.gain.setTargetAtTime(musicVolume * 0.42, audioCtx.currentTime, 0.05);
+      }
+    });
+
+    // =========================================================================
+    // 4. LAMONT HIGHTOWER NARRATION ENGINE (GOOGLE DRIVE + ELEVENLABS + SPEECH)
+    // =========================================================================
+    const NARRATOR_NAME = 'Lamont Hightower';
+    const LAMONT_DRIVE_TRACKS = [
+      'https://drive.google.com/file/d/1U_-gV5NwbqwxZYLmXJMT8HV2b5K3VWi_/view?usp=drive_link',
+      'https://drive.google.com/file/d/1uIvDltGuTyAgTJmumlUlAQa2xrWE0q80/view?usp=drive_link',
+      'https://drive.google.com/file/d/1FeoquVb3B2WGYDCsGD3j8hILN15lmc-I/view?usp=drive_link',
+      'https://drive.google.com/file/d/1bZkjr_GsGkTEpt58NXwyF6pXgov6eLqX/view?usp=drive_link',
+      'https://drive.google.com/file/d/1N3hik2EiCN-lZ_kQPMqqw_mDCh4LVUyX/view?usp=drive_link',
+      'https://drive.google.com/file/d/1r-jXP2BNOCP0A_GFmwzF67KjddDgSDiD/view?usp=drive_link',
+      'https://drive.google.com/file/d/1tq6ky3MtvkpR9GYEAl5I70iRZDLjBJFr/view?usp=drive_link',
+      'https://drive.google.com/file/d/18X5GluqXDHFZWQdw0fi9vEtBb14p-CEt/view?usp=drive_link',
+      'https://drive.google.com/file/d/1ds3Gz5xnFvA7c-2OAwbZe_3AVagBeBYl/view?usp=drive_link',
+      'https://drive.google.com/file/d/1tyJScjr0sIBRsnotapJ0kdIeI74LA4-i/view?usp=drive_link',
+      'https://drive.google.com/file/d/1uxt1pwyNZFaeCxtntl__s0hfHLN5UmsJ/view?usp=drive_link',
+      'https://drive.google.com/file/d/1s6gagdRLcxaYmlxYMo5PiHpZfgVitCdb/view?usp=drive_link',
+      'https://drive.google.com/file/d/1jUmwZeA90EmZp23Ul8sqX4r5KE9KYWmw/view?usp=drive_link',
+      'https://drive.google.com/file/d/1nb7GbmuOzC9tWcCNBs4AlbbrWXaU2Cto/view?usp=drive_link',
+      'https://drive.google.com/file/d/1texq7qfgx2W_blCCQGSea1dBTAeh4vjd/view?usp=drive_link',
+      'https://drive.google.com/file/d/1c2UgVLTqKnTtVOF95hfbGsaj9Xhpcemf/view?usp=drive_link',
+      'https://drive.google.com/file/d/1N9K8_8vV-RrbT34672G3XJ9CYw98o2Su/view?usp=drive_link',
+      'https://drive.google.com/file/d/1DHHhlU5CRBSxhKFSndR7vdI_fAdemPxh/view?usp=drive_link'
+    ];
+
+    let isSpeaking = false;
+    let isFullBookMode = false;
+    let fullBookQueueIndex = 0;
+    let currentElevenAudio = null;
+    let currentElevenAudioUrl = null;
+    let currentDriveAudio = null;
+
+    const narrationSourceSelect = document.getElementById('narration-source-mode');
+    const gdriveConfigBox = document.getElementById('gdrive-audio-config');
+    const gdriveAudioUrlInput = document.getElementById('gdrive-audio-url');
+    const elevenVoiceSelect = document.getElementById('eleven-voice-select');
+    const elevenModelSelect = document.getElementById('eleven-model-select');
+    const elevenCustomVoiceRow = document.getElementById('custom-voice-row');
+    const elevenCustomVoiceInput = document.getElementById('eleven-custom-voice-id');
+    const elevenApiKeyInput = document.getElementById('eleven-api-key');
+
+    if (narrationSourceSelect && localStorage.getItem('ctc_narration_mode')) {
+      narrationSourceSelect.value = localStorage.getItem('ctc_narration_mode');
+    }
+    if (gdriveAudioUrlInput) {
+      gdriveAudioUrlInput.value = localStorage.getItem('ctc_gdrive_audio_url') || LAMONT_DRIVE_TRACKS[0];
+    }
+    if (elevenVoiceSelect && localStorage.getItem('ctc_eleven_voice')) {
+      elevenVoiceSelect.value = localStorage.getItem('ctc_eleven_voice');
+    }
+    if (elevenModelSelect && localStorage.getItem('ctc_eleven_model')) {
+      elevenModelSelect.value = localStorage.getItem('ctc_eleven_model');
+    }
+    if (elevenCustomVoiceInput && localStorage.getItem('ctc_eleven_custom_voice')) {
+      elevenCustomVoiceInput.value = localStorage.getItem('ctc_eleven_custom_voice');
+    }
+    if (elevenApiKeyInput && localStorage.getItem('ctc_eleven_api_key')) {
+      elevenApiKeyInput.value = localStorage.getItem('ctc_eleven_api_key');
+    }
+
+    function syncNarrationModeUI() {
+      const mode = narrationSourceSelect?.value || 'gdrive';
+      gdriveConfigBox?.classList.toggle('hidden', mode !== 'gdrive');
+      elevenCustomVoiceRow?.classList.toggle('hidden', elevenVoiceSelect?.value !== 'custom');
+      updateVoiceStatusLabel();
+    }
+
+    narrationSourceSelect?.addEventListener('change', () => {
+      localStorage.setItem('ctc_narration_mode', narrationSourceSelect.value);
+      syncNarrationModeUI();
+    });
+    gdriveAudioUrlInput?.addEventListener('input', () => {
+      localStorage.setItem('ctc_gdrive_audio_url', gdriveAudioUrlInput.value.trim());
+      updateVoiceStatusLabel();
+    });
+    elevenVoiceSelect?.addEventListener('change', () => {
+      localStorage.setItem('ctc_eleven_voice', elevenVoiceSelect.value);
+      syncNarrationModeUI();
+    });
+    elevenModelSelect?.addEventListener('change', () => {
+      localStorage.setItem('ctc_eleven_model', elevenModelSelect.value);
+    });
+    elevenCustomVoiceInput?.addEventListener('input', () => {
+      localStorage.setItem('ctc_eleven_custom_voice', elevenCustomVoiceInput.value.trim());
+    });
+    elevenApiKeyInput?.addEventListener('input', () => {
+      localStorage.setItem('ctc_eleven_api_key', elevenApiKeyInput.value.trim());
+      updateVoiceStatusLabel();
+    });
+
+    function resolveGoogleDriveAudioUrl(rawInput) {
+      const val = (rawInput || '').trim();
+      if (!val) return '';
+      const dMatch = val.match(/\/d\/([a-zA-Z0-9_-]{15,})/);
+      const qMatch = val.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+      const rawIdMatch = /^[a-zA-Z0-9_-]{20,}$/.test(val) ? [null, val] : null;
+      const fileId = (dMatch && dMatch[1]) || (qMatch && qMatch[1]) || (rawIdMatch && rawIdMatch[1]);
+      if (fileId) {
+        return `https://docs.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+      }
+      return val;
+    }
+
+    function getDriveUrlForSpread(spreadIdx) {
+      const customOverride = (gdriveAudioUrlInput?.value || '').trim();
+      if (customOverride && customOverride !== LAMONT_DRIVE_TRACKS[0]) {
+        return resolveGoogleDriveAudioUrl(customOverride);
+      }
+      const mapped = LAMONT_DRIVE_TRACKS[spreadIdx] || LAMONT_DRIVE_TRACKS[0];
+      return resolveGoogleDriveAudioUrl(mapped);
+    }
+
+    function getSelectedVoiceId() {
+      if (!elevenVoiceSelect) return 'JBFqnCBsd6RMkjVDRZzb';
+      if (elevenVoiceSelect.value === 'custom') {
+        return (elevenCustomVoiceInput?.value || '').trim() || 'JBFqnCBsd6RMkjVDRZzb';
+      }
+      return elevenVoiceSelect.value;
+    }
+
+    function getElevenApiKey() {
+      return (elevenApiKeyInput?.value || '').trim();
+    }
+
+    function updateVoiceStatusLabel(detailText = '') {
+      const statusEl = document.getElementById('voice-engine-status');
+      const progEl = document.getElementById('narration-progress-label');
+      const mode = narrationSourceSelect?.value || 'gdrive';
+      const hasEleven = Boolean(getElevenApiKey());
+
+      if (statusEl) {
+        if (mode === 'gdrive') {
+          statusEl.textContent = `Narrator: ${NARRATOR_NAME} • 18 Google Drive Tracks Linked`;
+        } else if (mode === 'elevenlabs') {
+          statusEl.textContent = hasEleven
+            ? `Narrator: ${NARRATOR_NAME} • ElevenLabs AI (${elevenModelSelect?.value || 'multilingual_v2'})`
+            : `Narrator: ${NARRATOR_NAME} • Browser Fallback (Add ElevenLabs key for AI)`;
+        } else {
+          statusEl.textContent = `Narrator: ${NARRATOR_NAME} • Browser Web Speech`;
+        }
+      }
+      if (progEl && detailText) {
+        progEl.textContent = detailText;
+      }
+    }
+    syncNarrationModeUI();
+
+    function buildSpreadNarrationScript(spreadIdx) {
+      const sp = BOOK_SPREADS[spreadIdx] || BOOK_SPREADS[0];
+      const intro = spreadIdx === 0 ? `Changing the Channel, narrated by ${NARRATOR_NAME}. ` : '';
+      if (sp.type === 'cover') {
+        return `${intro}${sp.title}: ${sp.subtitle}. ${sp.author}. ${sp.quote} Action step: ${sp.exercise}`;
+      }
+      const leftParts = [
+        sp.left?.heading || '',
+        ...(sp.left?.body || []),
+        sp.left?.callout ? `Key insight: ${sp.left.callout}` : ''
+      ].filter(Boolean);
+      const rightParts = [
+        sp.right?.heading || '',
+        ...(sp.right?.body || []),
+        ...(sp.right?.bullets || [])
+      ].filter(Boolean);
+      return `${intro}${sp.chapterLabel}. ${leftParts.join(' ')} ${rightParts.join(' ')} Exercise: ${sp.exercise}`;
+    }
+
+    function stopNarration() {
+      isSpeaking = false;
+      isFullBookMode = false;
+      fullBookQueueIndex = 0;
+
+      if (currentDriveAudio) {
+        try {
+          currentDriveAudio.pause();
+          currentDriveAudio.currentTime = 0;
+        } catch (e) {}
+        currentDriveAudio = null;
+      }
+      if (currentElevenAudio) {
+        try {
+          currentElevenAudio.pause();
+          currentElevenAudio.currentTime = 0;
+        } catch (e) {}
+        currentElevenAudio = null;
+      }
+      if (currentElevenAudioUrl) {
+        URL.revokeObjectURL(currentElevenAudioUrl);
+        currentElevenAudioUrl = null;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+
+      const icon = document.getElementById('narrate-icon');
+      const label = document.getElementById('narrate-label');
+      const stopBtn = document.getElementById('btn-stop-narration-media');
+      if (icon) icon.className = 'fa-solid fa-volume-high text-amber-400';
+      if (label) label.textContent = 'Read Aloud';
+      if (stopBtn) stopBtn.classList.add('hidden');
+      updateVoiceStatusLabel(`Stopped • ${NARRATOR_NAME} • 18 Drive Tracks Ready`);
+    }
+
+    function speakWithWebSpeech(text, onDone) {
+      if (!('speechSynthesis' in window)) {
+        showToast('Speech narration not supported in this browser');
+        stopNarration();
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 0.96;
+      utter.pitch = 1.0;
+      utter.onend = () => {
+        if (onDone) onDone();
+        else stopNarration();
+      };
+      utter.onerror = () => {
+        if (onDone) onDone();
+        else stopNarration();
+      };
+      window.speechSynthesis.speak(utter);
+    }
+
+    async function speakWithElevenLabs(text, onDone) {
+      const apiKey = getElevenApiKey();
+      const voiceId = getSelectedVoiceId();
+      const modelId = elevenModelSelect?.value || 'eleven_multilingual_v2';
+
+      if (!apiKey) {
+        speakWithWebSpeech(text, onDone);
+        return;
+      }
+
+      try {
+        updateVoiceStatusLabel(`Generating ${NARRATOR_NAME} ElevenLabs AI audio...`);
+        const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': apiKey,
+            'Accept': 'audio/mpeg'
+          },
+          body: JSON.stringify({
+            text: text.slice(0, 4900),
+            model_id: modelId,
+            voice_settings: {
+              stability: 0.48,
+              similarity_boost: 0.78,
+              style: 0.25,
+              use_speaker_boost: true
+            }
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`ElevenLabs HTTP ${res.status}`);
+        }
+
+        const blob = await res.blob();
+        if (currentElevenAudioUrl) URL.revokeObjectURL(currentElevenAudioUrl);
+        currentElevenAudioUrl = URL.createObjectURL(blob);
+        currentElevenAudio = new Audio(currentElevenAudioUrl);
+        currentElevenAudio.onended = () => {
+          if (currentElevenAudioUrl) {
+            URL.revokeObjectURL(currentElevenAudioUrl);
+            currentElevenAudioUrl = null;
+          }
+          if (onDone) onDone();
+          else stopNarration();
+        };
+        currentElevenAudio.onerror = () => {
+          speakWithWebSpeech(text, onDone);
+        };
+        updateVoiceStatusLabel(`Playing ${NARRATOR_NAME} (ElevenLabs AI)`);
+        await currentElevenAudio.play();
+      } catch (err) {
+        showToast('ElevenLabs unavailable — using browser voice fallback');
+        speakWithWebSpeech(text, onDone);
+      }
+    }
+
+    async function playNarrationSegment(text, onDone, spreadIdx = currentSpread) {
+      const mode = narrationSourceSelect?.value || 'gdrive';
+      if (mode === 'gdrive') {
+        const streamUrl = getDriveUrlForSpread(spreadIdx);
+        if (streamUrl) {
+          try {
+            updateVoiceStatusLabel(`Playing Drive Track #${spreadIdx + 1} (${NARRATOR_NAME})...`);
+            currentDriveAudio = new Audio(streamUrl);
+            currentDriveAudio.onended = () => {
+              if (onDone) onDone();
+              else stopNarration();
+            };
+            currentDriveAudio.onerror = () => {
+              showToast('Drive stream blocked/unavailable — falling back to ElevenLabs/Speech');
+              speakWithElevenLabs(text, onDone);
+            };
+            await currentDriveAudio.play();
+            return;
+          } catch (err) {
+            speakWithElevenLabs(text, onDone);
+            return;
+          }
+        }
+        speakWithElevenLabs(text, onDone);
+        return;
+      }
+
+      if (mode === 'elevenlabs') {
+        await speakWithElevenLabs(text, onDone);
+        return;
+      }
+
+      speakWithWebSpeech(text, onDone);
+    }
+
+    function playNextFullBookSpread() {
+      if (!isFullBookMode || fullBookQueueIndex >= LAMONT_DRIVE_TRACKS.length) {
+        showToast(`Full Book Narration by ${NARRATOR_NAME} Complete`);
+        stopNarration();
+        return;
+      }
+      const trackIdx = fullBookQueueIndex;
+      const spreadTarget = Math.min(trackIdx, BOOK_SPREADS.length - 1);
+      if (spreadTarget !== currentSpread) {
+        flipToSpread(spreadTarget);
+      }
+      const sp = BOOK_SPREADS[spreadTarget];
+      updateVoiceStatusLabel(`${NARRATOR_NAME} • Track ${trackIdx + 1}/${LAMONT_DRIVE_TRACKS.length}: ${sp.chapterLabel}`);
+      const script = buildSpreadNarrationScript(spreadTarget);
+      playNarrationSegment(script, () => {
+        fullBookQueueIndex++;
+        playNextFullBookSpread();
+      }, trackIdx);
+    }
+
+    function speakText(text, spreadIdx = currentSpread) {
+      stopNarration();
+      isSpeaking = true;
+      document.getElementById('narrate-icon').className = 'fa-solid fa-stop text-rose-400';
+      document.getElementById('narrate-label').textContent = 'Stop Audio';
+      document.getElementById('btn-stop-narration-media')?.classList.remove('hidden');
+      playNarrationSegment(text, () => stopNarration(), spreadIdx);
+    }
+
+    function narrateCurrentSpread() {
+      if (isSpeaking || isFullBookMode) {
+        stopNarration();
+        return;
+      }
+      const sp = BOOK_SPREADS[currentSpread];
+      updateVoiceStatusLabel(`${NARRATOR_NAME} • Track ${currentSpread + 1}/${LAMONT_DRIVE_TRACKS.length}: ${sp.chapterLabel}`);
+      speakText(buildSpreadNarrationScript(currentSpread), currentSpread);
+    }
+
+    function narrateFullBook() {
+      if (isFullBookMode) {
+        stopNarration();
+        return;
+      }
+      stopNarration();
+      isSpeaking = true;
+      isFullBookMode = true;
+      fullBookQueueIndex = currentSpread;
+      document.getElementById('narrate-icon').className = 'fa-solid fa-stop text-rose-400';
+      document.getElementById('narrate-label').textContent = 'Stop Book';
+      document.getElementById('btn-stop-narration-media')?.classList.remove('hidden');
+      showToast(`Full Book Narration (${NARRATOR_NAME}) — 18 Drive Tracks`);
+      playNextFullBookSpread();
+    }
+
+    document.getElementById('btn-narrate').addEventListener('click', narrateCurrentSpread);
+    document.getElementById('btn-play-trailer').addEventListener('click', narrateCurrentSpread);
+    document.getElementById('btn-narrate-full-book')?.addEventListener('click', narrateFullBook);
+    document.getElementById('btn-stop-narration-media')?.addEventListener('click', stopNarration);
+
+    // =========================================================================
+    // 5. THREE.JS & WEBXR SCENE SETUP
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#060a14');
+    scene.fog = new THREE.FogExp2('#060a14', 0.042);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.05, 80);
+    const CAM_DEFAULT = new THREE.Vector3(0, 1.48, 1.42);
+    const CAM_ZOOM = new THREE.Vector3(0, 1.38, 0.88);
+    let targetCamPos = CAM_DEFAULT.clone();
+    let isZoomedIn = false;
+    camera.position.copy(CAM_DEFAULT);
+
+    let renderer = null;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    } catch (e) {
+      renderer = new THREE.WebGLRenderer({ antialias: false });
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    try {
+      renderer.xr.enabled = true;
+    } catch (e) {
+      console.warn('WebXR unavailable in this context:', e);
+    }
+    container.appendChild(renderer.domElement);
+
+    let vrSystemBtn = null;
+    try {
+      vrSystemBtn = VRButton.createButton(renderer);
+      document.body.appendChild(vrSystemBtn);
+    } catch (e) {
+      console.warn('VRButton skipped:', e);
+    }
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.16, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 0.55;
+    controls.maxDistance = 3.2;
+    controls.maxPolarAngle = Math.PI * 0.58;
+    controls.minPolarAngle = Math.PI * 0.12;
+    controls.update();
+
+    const hemiLight = new THREE.HemisphereLight('#bae6fd', '#1e1b4b', 0.85);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.SpotLight('#fff7ed', 3.4, 12, Math.PI / 4, 0.45, 1.2);
+    keyLight.position.set(1.2, 3.2, 1.8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const rimTeal = new THREE.PointLight('#14b8a6', 1.8, 6);
+    rimTeal.position.set(-1.6, 1.8, -0.8);
+    scene.add(rimTeal);
+
+    const rimAmber = new THREE.PointLight('#f59e0b', 1.6, 6);
+    rimAmber.position.set(1.6, 1.7, -0.6);
+    scene.add(rimAmber);
+
+    // =========================================================================
+    // 6. SANCTUARY PEDESTAL, ENVIRONMENTS & FLOATING FREQUENCY RINGS
+    // =========================================================================
+    const envGroup = new THREE.Group();
+    scene.add(envGroup);
+
+    const floorGeo = new THREE.CylinderGeometry(7.5, 7.5, 0.1, 64);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: '#0b1222',
+      roughness: 0.45,
+      metalness: 0.35
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.05;
+    floorMesh.receiveShadow = true;
+    envGroup.add(floorMesh);
+
+    const ringMat = new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.25 });
+    const floorRing1 = new THREE.Mesh(new THREE.RingGeometry(1.15, 1.18, 64), ringMat);
+    floorRing1.rotation.x = -Math.PI / 2;
+    floorRing1.position.y = 0.003;
+    envGroup.add(floorRing1);
+
+    const floorRing2 = new THREE.Mesh(
+      new THREE.RingGeometry(2.35, 2.38, 64),
+      new THREE.MeshBasicMaterial({ color: '#14b8a6', transparent: true, opacity: 0.2 })
+    );
+    floorRing2.rotation.x = -Math.PI / 2;
+    floorRing2.position.y = 0.003;
+    envGroup.add(floorRing2);
+
+    const lecternGroup = new THREE.Group();
+    scene.add(lecternGroup);
+
+    const pedBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.38, 0.08, 32),
+      new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.3, metalness: 0.7 })
+    );
+    pedBase.position.y = 0.04;
+    pedBase.receiveShadow = true;
+    lecternGroup.add(pedBase);
+
+    const pedCol = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.095, 0.94, 24),
+      new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.25, metalness: 0.8 })
+    );
+    pedCol.position.y = 0.51;
+    pedCol.castShadow = true;
+    lecternGroup.add(pedCol);
+
+    const pedTray = new THREE.Mesh(
+      new THREE.BoxGeometry(0.96, 0.03, 0.64),
+      new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.35, metalness: 0.6 })
+    );
+    pedTray.position.set(0, 0.99, 0);
+    pedTray.rotation.x = 0.34;
+    pedTray.receiveShadow = true;
+    lecternGroup.add(pedTray);
+
+    const trayTrim = new THREE.Mesh(
+      new THREE.BoxGeometry(0.98, 0.012, 0.66),
+      new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.25, metalness: 0.85, emissive: '#b45309', emissiveIntensity: 0.25 })
+    );
+    trayTrim.position.set(0, 0.975, 0);
+    trayTrim.rotation.x = 0.34;
+    lecternGroup.add(trayTrim);
+
+    const particleCount = 420;
+    const partGeo = new THREE.BufferGeometry();
+    const partPos = new Float32Array(particleCount * 3);
+    const partCol = new Float32Array(particleCount * 3);
+    const cGold = new THREE.Color('#fbbf24');
+    const cTeal = new THREE.Color('#2dd4bf');
+
+    for (let i = 0; i < particleCount; i++) {
+      const r = 1.4 + Math.random() * 6.5;
+      const theta = Math.random() * Math.PI * 2;
+      partPos[i * 3] = Math.cos(theta) * r;
+      partPos[i * 3 + 1] = 0.2 + Math.random() * 4.2;
+      partPos[i * 3 + 2] = Math.sin(theta) * r;
+      const c = i % 2 === 0 ? cGold : cTeal;
+      partCol[i * 3] = c.r;
+      partCol[i * 3 + 1] = c.g;
+      partCol[i * 3 + 2] = c.b;
+    }
+    partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+    partGeo.setAttribute('color', new THREE.BufferAttribute(partCol, 3));
+    const partMat = new THREE.PointsMaterial({
+      size: 0.032,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.72
+    });
+    const particles = new THREE.Points(partGeo, partMat);
+    scene.add(particles);
+
+    const envHorizonGroup = new THREE.Group();
+    envHorizonGroup.visible = false;
+    scene.add(envHorizonGroup);
+    for (let i = 0; i < 6; i++) {
+      const wRing = new THREE.Mesh(
+        new THREE.RingGeometry(1.5 + i * 0.85, 1.54 + i * 0.85, 64),
+        new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.18 - i * 0.02 })
+      );
+      wRing.rotation.x = -Math.PI / 2;
+      wRing.position.y = 0.01;
+      envHorizonGroup.add(wRing);
+    }
+
+    const envStudioGroup = new THREE.Group();
+    envStudioGroup.visible = false;
+    scene.add(envStudioGroup);
+    const studioEqBars = [];
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2;
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.5, 0.08),
+        new THREE.MeshStandardMaterial({
+          color: i % 2 === 0 ? '#f59e0b' : '#14b8a6',
+          emissive: i % 2 === 0 ? '#d97706' : '#0d9488',
+          emissiveIntensity: 0.45
+        })
+      );
+      bar.position.set(Math.cos(angle) * 3.4, 0.35, Math.sin(angle) * 3.4);
+      bar.lookAt(0, 0.35, 0);
+      envStudioGroup.add(bar);
+      studioEqBars.push(bar);
+    }
+
+    function setEnvironmentTheme(theme) {
+      document.querySelectorAll('.env-btn').forEach(btn => {
+        if (btn.dataset.env === theme) {
+          btn.classList.add('bg-amber-500', 'text-slate-950', 'font-semibold');
+          btn.classList.remove('text-slate-300');
+        } else {
+          btn.classList.remove('bg-amber-500', 'text-slate-950', 'font-semibold');
+          btn.classList.add('text-slate-300');
+        }
+      });
+
+      envHorizonGroup.visible = theme === 'horizon';
+      envStudioGroup.visible = theme === 'studio';
+
+      if (theme === 'sanctuary') {
+        scene.background.set('#060a14');
+        scene.fog.color.set('#060a14');
+        floorMat.color.set('#0b1222');
+        rimTeal.color.set('#14b8a6');
+        rimAmber.color.set('#f59e0b');
+      } else if (theme === 'horizon') {
+        scene.background.set('#041526');
+        scene.fog.color.set('#041526');
+        floorMat.color.set('#07223b');
+        rimTeal.color.set('#38bdf8');
+        rimAmber.color.set('#2dd4bf');
+      } else if (theme === 'studio') {
+        scene.background.set('#11091d');
+        scene.fog.color.set('#11091d');
+        floorMat.color.set('#1b102e');
+        rimTeal.color.set('#ec4899');
+        rimAmber.color.set('#f59e0b');
+      }
+      showToast(`Environment: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`);
+    }
+
+    document.querySelectorAll('.env-btn').forEach(btn => {
+      btn.addEventListener('click', () => setEnvironmentTheme(btn.dataset.env));
+    });
+
+    // =========================================================================
+    // 7. 3D INTERACTIVE FLIPBOOK ASSEMBLY WITH CURVED PAGE-TURN ANIMATION
+    // =========================================================================
+    const bookRoot = new THREE.Group();
+    bookRoot.position.set(0, 1.03, 0);
+    bookRoot.rotation.x = 0.34;
+    scene.add(bookRoot);
+
+    const PAGE_W = 0.42;
+    const PAGE_H = 0.58;
+    const PAGE_SEG_X = 24;
+
+    const spineMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.022, PAGE_H + 0.02, 20, 1, false, Math.PI * 0.5, Math.PI),
+      new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.4, metalness: 0.6 })
+    );
+    spineMesh.position.set(0, -0.005, 0);
+    bookRoot.add(spineMesh);
+
+    const leftBaseGeo = new THREE.BoxGeometry(PAGE_W + 0.015, 0.018, PAGE_H + 0.015);
+    leftBaseGeo.translate(-PAGE_W / 2 - 0.005, -0.01, 0);
+    const leftBoard = new THREE.Mesh(
+      leftBaseGeo,
+      new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.5, metalness: 0.3 })
+    );
+    leftBoard.castShadow = true;
+    leftBoard.receiveShadow = true;
+    bookRoot.add(leftBoard);
+
+    const rightBaseGeo = new THREE.BoxGeometry(PAGE_W + 0.015, 0.018, PAGE_H + 0.015);
+    rightBaseGeo.translate(PAGE_W / 2 + 0.005, -0.01, 0);
+    const rightBoard = new THREE.Mesh(
+      rightBaseGeo,
+      new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.5, metalness: 0.3 })
+    );
+    rightBoard.castShadow = true;
+    rightBoard.receiveShadow = true;
+    bookRoot.add(rightBoard);
+
+    function createSheetPlane(side) {
+      const geo = new THREE.PlaneGeometry(PAGE_W, PAGE_H, PAGE_SEG_X, 1);
+      geo.rotateX(-Math.PI / 2);
+      if (side === 'left') {
+        geo.translate(-PAGE_W / 2, 0.002, 0);
+      } else {
+        geo.translate(PAGE_W / 2, 0.002, 0);
+      }
+      return geo;
+    }
+
+    const leftPageMat = new THREE.MeshStandardMaterial({
+      map: spreadTextures[0].left,
+      roughness: 0.68,
+      metalness: 0.04,
+      side: THREE.FrontSide
+    });
+    const leftPageMesh = new THREE.Mesh(createSheetPlane('left'), leftPageMat);
+    leftPageMesh.receiveShadow = true;
+    leftPageMesh.name = 'leftPage';
+    bookRoot.add(leftPageMesh);
+
+    const rightPageMat = new THREE.MeshStandardMaterial({
+      map: spreadTextures[0].right,
+      roughness: 0.68,
+      metalness: 0.04,
+      side: THREE.FrontSide
+    });
+    const rightPageMesh = new THREE.Mesh(createSheetPlane('right'), rightPageMat);
+    rightPageMesh.receiveShadow = true;
+    rightPageMesh.name = 'rightPage';
+    bookRoot.add(rightPageMesh);
+
+    const turnGeo = new THREE.PlaneGeometry(PAGE_W, PAGE_H, PAGE_SEG_X, 1);
+    turnGeo.rotateX(-Math.PI / 2);
+    turnGeo.translate(PAGE_W / 2, 0, 0);
+    const baseTurnPositions = Float32Array.from(turnGeo.attributes.position.array);
+
+    const turnFrontMat = new THREE.MeshStandardMaterial({
+      map: spreadTextures[0].right,
+      roughness: 0.62,
+      metalness: 0.05,
+      side: THREE.FrontSide
+    });
+    const turnBackMat = new THREE.MeshStandardMaterial({
+      map: spreadTextures[1].left,
+      roughness: 0.62,
+      metalness: 0.05,
+      side: THREE.BackSide
+    });
+
+    const turningGroup = new THREE.Group();
+    turningGroup.position.y = 0.005;
+    turningGroup.visible = false;
+    bookRoot.add(turningGroup);
+
+    const turnFrontMesh = new THREE.Mesh(turnGeo, turnFrontMat);
+    turnFrontMesh.castShadow = true;
+    const turnBackMesh = new THREE.Mesh(turnGeo, turnBackMat);
+    turnBackMesh.castShadow = true;
+    turningGroup.add(turnFrontMesh, turnBackMesh);
+
+    function deformTurningPage(progress, direction) {
+      const pos = turnGeo.attributes.position;
+      const arch = Math.sin(progress * Math.PI);
+
+      for (let i = 0; i < pos.count; i++) {
+        const bx = baseTurnPositions[i * 3];
+        const bz = baseTurnPositions[i * 3 + 2];
+        const normX = bx / PAGE_W;
+
+        const baseAngle = progress * Math.PI;
+        const bendAngle = baseAngle - arch * 0.42 * Math.sin(normX * Math.PI * 0.85);
+        const radius = bx;
+        const nx = Math.cos(bendAngle) * radius;
+        const ny = Math.sin(bendAngle) * radius + arch * 0.025 * Math.sin(normX * Math.PI);
+
+        pos.setXYZ(i, nx, ny, bz);
+      }
+      pos.needsUpdate = true;
+      turnGeo.computeVertexNormals();
+    }
+
+    // =========================================================================
+    // 8. BOOK STATE & PAGE-TURN CONTROLLER
+    // =========================================================================
+    let currentSpread = 0;
+    let isFlipping = false;
+    let flipProgress = 0;
+    let flipDirection = 1;
+    let flipTargetSpread = 0;
+
+    function updateBookClosedPose(spreadIdx) {
+      if (spreadIdx === 0) {
+        leftBoard.visible = false;
+        leftPageMesh.visible = false;
+        rightBoard.visible = true;
+        rightPageMesh.visible = true;
+        bookRoot.position.x = -PAGE_W * 0.5;
+      } else {
+        leftBoard.visible = true;
+        leftPageMesh.visible = true;
+        rightBoard.visible = true;
+        rightPageMesh.visible = true;
+        bookRoot.position.x = 0;
+      }
+    }
+
+    function renderSpread(idx) {
+      currentSpread = Math.max(0, Math.min(BOOK_SPREADS.length - 1, idx));
+      const sp = BOOK_SPREADS[currentSpread];
+
+      leftPageMat.map = spreadTextures[currentSpread].left;
+      leftPageMat.needsUpdate = true;
+      rightPageMat.map = spreadTextures[currentSpread].right;
+      rightPageMat.needsUpdate = true;
+
+      updateBookClosedPose(currentSpread);
+
+      document.getElementById('hud-spread-idx').textContent = String(currentSpread).padStart(2, '0');
+      document.getElementById('hud-spread-total').textContent = String(BOOK_SPREADS.length - 1).padStart(2, '0');
+      document.getElementById('spread-scrubber').value = currentSpread;
+      document.getElementById('hud-chapter-pill').textContent = sp.chapterLabel;
+
+      document.getElementById('btn-prev').disabled = currentSpread === 0;
+      document.getElementById('btn-next').disabled = currentSpread === BOOK_SPREADS.length - 1;
+
+      document.getElementById('tele-freq').textContent = sp.freq;
+      document.getElementById('tele-title').textContent = sp.title || sp.chapterLabel;
+      document.getElementById('tele-sub').textContent = sp.subtitle || (sp.left ? sp.left.heading : '');
+      document.getElementById('tele-shift').textContent = sp.shift;
+
+      document.getElementById('lab-rule-tag').textContent = sp.freq;
+      document.getElementById('lab-rule-num').textContent = sp.freq.split('•')[0].trim();
+      document.getElementById('lab-rule-title').textContent = sp.title || sp.chapterLabel;
+      document.getElementById('lab-rule-quote').textContent = `"${sp.quote}"`;
+      document.getElementById('lab-exercise-box').innerHTML = `<strong class="text-amber-300">Practice:</strong> ${sp.exercise}`;
+
+      const promptsEl = document.getElementById('lab-prompts-list');
+      if (promptsEl && sp.prompts) {
+        promptsEl.innerHTML = `<div class="font-bold text-[10px] uppercase tracking-wider text-amber-400 mb-1">Reflection Prompts</div>` +
+          sp.prompts.map(pr => `<div>→ ${pr}</div>`).join('');
+      }
+
+      loadJournalForSpread(currentSpread);
+
+      if (isSpeaking && !isFullBookMode) stopNarration();
+    }
+
+    function flipToSpread(targetIdx) {
+      if (isFlipping) return;
+      targetIdx = Math.max(0, Math.min(BOOK_SPREADS.length - 1, targetIdx));
+      if (targetIdx === currentSpread) return;
+
+      if (Math.abs(targetIdx - currentSpread) > 1) {
+        playPaperFlipSound();
+        renderSpread(targetIdx);
+        return;
+      }
+
+      isFlipping = true;
+      flipTargetSpread = targetIdx;
+      flipDirection = targetIdx > currentSpread ? 1 : -1;
+      flipProgress = flipDirection === 1 ? 0 : 1;
+
+      playPaperFlipSound();
+
+      if (flipDirection === 1) {
+        turnFrontMat.map = spreadTextures[currentSpread].right;
+        turnBackMat.map = spreadTextures[targetIdx].left;
+        rightPageMat.map = spreadTextures[targetIdx].right;
+        rightPageMat.needsUpdate = true;
+
+        leftBoard.visible = true;
+        leftPageMesh.visible = currentSpread > 0;
+        rightBoard.visible = true;
+        rightPageMesh.visible = true;
+      } else {
+        turnFrontMat.map = spreadTextures[targetIdx].right;
+        turnBackMat.map = spreadTextures[currentSpread].left;
+        leftPageMat.map = spreadTextures[targetIdx].left;
+        leftPageMat.needsUpdate = true;
+
+        leftBoard.visible = targetIdx > 0;
+        leftPageMesh.visible = targetIdx > 0;
+        rightBoard.visible = true;
+        rightPageMesh.visible = true;
+      }
+
+      turnFrontMat.needsUpdate = true;
+      turnBackMat.needsUpdate = true;
+      turningGroup.visible = true;
+      deformTurningPage(flipProgress, flipDirection);
+    }
+
+    document.getElementById('btn-prev').addEventListener('click', () => flipToSpread(currentSpread - 1));
+    document.getElementById('btn-next').addEventListener('click', () => flipToSpread(currentSpread + 1));
+    document.getElementById('spread-scrubber').addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      if (!isFlipping) renderSpread(val);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) return;
+      if (e.key === 'ArrowRight') flipToSpread(currentSpread + 1);
+      if (e.key === 'ArrowLeft') flipToSpread(currentSpread - 1);
+    });
+
+    // =========================================================================
+    // 9. DESKTOP RAYCASTING (CLICKING 3D PAGES TO TURN) + HOVER CURSOR
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let pointerDownPos = { x: 0, y: 0 };
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
+    renderer.domElement.addEventListener('pointermove', (e) => {
+      if (renderer.xr.isPresenting) return;
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects([leftPageMesh, rightPageMesh], false);
+      renderer.domElement.style.cursor = hits.length > 0 ? 'pointer' : 'grab';
+    });
+
+    renderer.domElement.addEventListener('pointerup', (e) => {
+      if (renderer.xr.isPresenting) return;
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist > 6) return;
+
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects([leftPageMesh, rightPageMesh], false);
+      if (hits.length > 0) {
+        if (hits[0].object === rightPageMesh) {
+          flipToSpread(currentSpread + 1);
+        } else if (hits[0].object === leftPageMesh) {
+          flipToSpread(currentSpread - 1);
+        }
+      }
+    });
+
+    // =========================================================================
+    // 10. WEBXR CONTROLLERS, LASER POINTERS & IN-VR FLOATING PALETTE
+    // =========================================================================
+    const controllerModelFactory = new XRControllerModelFactory();
+    const xrControllers = [];
+
+    function createSpatialButton(label, colorHex, x, y) {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 80;
+      const ctx = c.getContext('2d');
+      drawRoundRect(ctx, 4, 4, 248, 72, 36);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = colorHex;
+      ctx.stroke();
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '700 26px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, 128, 49);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.22, 0.068),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+      );
+      mesh.position.set(x, y, 0);
+      return mesh;
+    }
+
+    const vrPalette = new THREE.Group();
+    vrPalette.position.set(0, 1.48, -0.45);
+    vrPalette.rotation.x = 0.22;
+    vrPalette.visible = false;
+    scene.add(vrPalette);
+
+    const vrPrevBtn = createSpatialButton('← PREV PAGE', '#38bdf8', -0.26, 0);
+    vrPrevBtn.name = 'vrPrev';
+    const vrNextBtn = createSpatialButton('NEXT PAGE →', '#f59e0b', 0.26, 0);
+    vrNextBtn.name = 'vrNext';
+    const vrAudioBtn = createSpatialButton('♪ THEME SONG', '#14b8a6', 0, 0);
+    vrAudioBtn.name = 'vrAudio';
+    vrPalette.add(vrPrevBtn, vrNextBtn, vrAudioBtn);
+
+    const xrInteractables = [leftPageMesh, rightPageMesh, vrPrevBtn, vrNextBtn, vrAudioBtn];
+
+    for (let i = 0; i < 2; i++) {
+      const ctrl = renderer.xr.getController(i);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 0, -2.5)
+      ]);
+      const lineMat = new THREE.LineBasicMaterial({ color: i === 0 ? '#f59e0b' : '#14b8a6' });
+      const laser = new THREE.Line(lineGeo, lineMat);
+      ctrl.add(laser);
+
+      ctrl.addEventListener('selectstart', () => {
+        const tempMat = new THREE.Matrix4().identity().extractRotation(ctrl.matrixWorld);
+        raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
+        raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMat);
+
+        const hits = raycaster.intersectObjects(xrInteractables, false);
+        if (hits.length > 0) {
+          const hitName = hits[0].object.name;
+          if (hitName === 'rightPage' || hitName === 'vrNext') {
+            flipToSpread(currentSpread + 1);
+          } else if (hitName === 'leftPage' || hitName === 'vrPrev') {
+            flipToSpread(currentSpread - 1);
+          } else if (hitName === 'vrAudio') {
+            toggleAmbientSoundscape(false);
+          }
+        }
+      });
+
+      scene.add(ctrl);
+      xrControllers.push(ctrl);
+
+      const grip = renderer.xr.getControllerGrip(i);
+      grip.add(controllerModelFactory.createControllerModel(grip));
+      scene.add(grip);
+    }
+
+    renderer.xr.addEventListener('sessionstart', () => {
+      vrPalette.visible = true;
+      document.getElementById('vr-btn-text').textContent = 'Exit VR';
+      showToast('WebXR Session Active — Point & Pull Trigger to Flip Pages');
+    });
+
+    renderer.xr.addEventListener('sessionend', () => {
+      vrPalette.visible = false;
+      document.getElementById('vr-btn-text').textContent = 'Enter VR';
+    });
+
+    document.getElementById('btn-enter-vr').addEventListener('click', () => {
+      if (vrSystemBtn) {
+        vrSystemBtn.click();
+      } else {
+        showToast('WebXR is not supported on this device/browser — enjoy 3D Orbit & Reader Zoom!');
+      }
+    });
+
+    // =========================================================================
+    // 11. UI CONTROLS, TOC MODAL, COMPANION DRAWER, BREATH TIMER & EQ QUIZ
+    // =========================================================================
+    let toastTimeout = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toast-banner');
+      document.getElementById('toast-text').textContent = msg;
+      banner.style.opacity = '1';
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        banner.style.opacity = '0';
+      }, 2800);
+    }
+
+    document.getElementById('btn-zoom-toggle').addEventListener('click', () => {
+      isZoomedIn = !isZoomedIn;
+      targetCamPos = isZoomedIn ? CAM_ZOOM.clone() : CAM_DEFAULT.clone();
+      document.getElementById('zoom-icon').className = isZoomedIn
+        ? 'fa-solid fa-magnifying-glass-minus text-amber-400'
+        : 'fa-solid fa-magnifying-glass-plus text-teal-400';
+      document.getElementById('zoom-label').textContent = isZoomedIn ? 'Overview' : 'Reader Zoom';
+    });
+
+    const tocModal = document.getElementById('toc-modal');
+    const tocGrid = document.getElementById('toc-grid');
+    BOOK_SPREADS.forEach((sp, idx) => {
+      const card = document.createElement('button');
+      card.className = 'text-left p-3.5 rounded-2xl bg-white/5 hover:bg-amber-500/15 border border-white/10 hover:border-amber-400/40 transition flex flex-col gap-1';
+      card.innerHTML = `
+        <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400">${sp.freq}</span>
+        <span class="serif-display text-lg font-bold text-white leading-tight">${sp.title || sp.chapterLabel}</span>
+        <span class="text-[11px] text-slate-300 line-clamp-2">${sp.shift}</span>
+      `;
+      card.addEventListener('click', () => {
+        tocModal.classList.add('hidden');
+        tocModal.classList.remove('flex');
+        flipToSpread(idx);
+      });
+      tocGrid.appendChild(card);
+    });
+
+    document.getElementById('btn-toc').addEventListener('click', () => {
+      tocModal.classList.remove('hidden');
+      tocModal.classList.add('flex');
+    });
+    document.getElementById('close-toc').addEventListener('click', () => {
+      tocModal.classList.add('hidden');
+      tocModal.classList.remove('flex');
+    });
+
+    const drawer = document.getElementById('companion-drawer');
+    function openCompanion(tabName = 'rules') {
+      drawer.classList.remove('translate-x-full');
+      switchCompanionTab(tabName);
+    }
+    function switchCompanionTab(tabName) {
+      document.querySelectorAll('.comp-tab').forEach(t => {
+        if (t.dataset.tab === tabName) {
+          t.classList.add('active', 'text-amber-400', 'border-b-2', 'border-amber-400');
+          t.classList.remove('text-slate-400');
+        } else {
+          t.classList.remove('active', 'text-amber-400', 'border-b-2', 'border-amber-400');
+          t.classList.add('text-slate-400');
+        }
+      });
+      document.querySelectorAll('.comp-pane').forEach(p => {
+        p.classList.toggle('hidden', p.id !== `tab-${tabName}`);
+      });
+    }
+
+    document.getElementById('btn-companion').addEventListener('click', () => openCompanion('rules'));
+    document.getElementById('close-companion').addEventListener('click', () => drawer.classList.add('translate-x-full'));
+    document.getElementById('tele-journal-btn').addEventListener('click', () => openCompanion('rules'));
+    document.getElementById('tele-breathe-btn').addEventListener('click', () => openCompanion('breathe'));
+    document.getElementById('btn-quick-quiz').addEventListener('click', () => openCompanion('quiz'));
+    document.getElementById('btn-quick-media').addEventListener('click', () => openCompanion('media'));
+
+    document.querySelectorAll('.comp-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchCompanionTab(tab.dataset.tab));
+    });
+
+    const chipBox = document.getElementById('emotion-chips');
+    const insightBox = document.getElementById('emotion-insight');
+    GRANULAR_EMOTIONS.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/5 hover:bg-amber-500/20 text-slate-200 border border-white/10 hover:border-amber-400/40 transition';
+      btn.textContent = item.word;
+      btn.addEventListener('click', () => {
+        insightBox.classList.remove('hidden');
+        insightBox.innerHTML = `<strong>Instead of "${item.base}" → "${item.word}":</strong> ${item.insight}`;
+      });
+      chipBox.appendChild(btn);
+    });
+
+    const journalInput = document.getElementById('journal-input');
+    const journalStatus = document.getElementById('journal-status');
+
+    function loadJournalForSpread(idx) {
+      const saved = localStorage.getItem(`ctc_journal_${idx}`) || '';
+      journalInput.value = saved;
+      journalStatus.textContent = saved ? 'Loaded saved notes' : 'Ready to reflect';
+    }
+
+    journalInput.addEventListener('input', () => {
+      localStorage.setItem(`ctc_journal_${currentSpread}`, journalInput.value);
+      journalStatus.textContent = 'Saved locally ✓';
+    });
+
+    ['morning', 'midday', 'evening'].forEach(slot => {
+      const el = document.getElementById(`wb-${slot}`);
+      el.value = localStorage.getItem(`ctc_wb_${slot}`) || '';
+      el.addEventListener('input', () => localStorage.setItem(`ctc_wb_${slot}`, el.value));
+    });
+
+    document.getElementById('btn-export-journal').addEventListener('click', () => {
+      let out = 'CHANGING THE CHANNEL — PERSONAL EQ WORKBOOK & REFLECTIONS\nBy Darnell E. Clark (PenGame Publishing, 2026)\n=========================================================\n\n';
+      out += `Morning Reset: ${localStorage.getItem('ctc_wb_morning') || '(empty)'}\n`;
+      out += `Midday Check-In: ${localStorage.getItem('ctc_wb_midday') || '(empty)'}\n`;
+      out += `Evening Reflection: ${localStorage.getItem('ctc_wb_evening') || '(empty)'}\n\n`;
+      BOOK_SPREADS.forEach((sp, idx) => {
+        const note = localStorage.getItem(`ctc_journal_${idx}`);
+        if (note && note.trim()) {
+          out += `[${sp.chapterLabel}]\n${note.trim()}\n\n`;
+        }
+      });
+      const blob = new Blob([out], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Changing-The-Channel-EQ-Workbook.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Workbook Notes Exported!');
+    });
+
+    let breathInterval = null;
+    let breathRemaining = 90;
+    const breathOrb = document.getElementById('breath-orb');
+    const breathPhase = document.getElementById('breath-phase');
+    const breathTimerEl = document.getElementById('breath-timer');
+
+    function formatSec(s) {
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+    }
+
+    function updateBreathCycle() {
+      const cyclePos = (90 - breathRemaining) % 10;
+      if (cyclePos < 4) {
+        breathPhase.textContent = 'INHALE (4s)';
+        breathOrb.style.transform = 'scale(1.26)';
+      } else {
+        breathPhase.textContent = 'EXHALE (6s)';
+        breathOrb.style.transform = 'scale(0.88)';
+      }
+      breathTimerEl.textContent = formatSec(breathRemaining);
+    }
+
+    document.getElementById('btn-breath-start').addEventListener('click', () => {
+      if (breathInterval) return;
+      if (breathRemaining <= 0) breathRemaining = 90;
+      updateBreathCycle();
+      breathInterval = setInterval(() => {
+        breathRemaining--;
+        if (breathRemaining <= 0) {
+          clearInterval(breathInterval);
+          breathInterval = null;
+          breathPhase.textContent = 'CHANNEL RESET';
+          breathTimerEl.textContent = '00:00';
+          breathOrb.style.transform = 'scale(1)';
+          playChimeSound();
+          showToast('90-Second Pause Complete — Channel Reset!');
+          return;
+        }
+        updateBreathCycle();
+      }, 1000);
+    });
+
+    document.getElementById('btn-breath-stop').addEventListener('click', () => {
+      clearInterval(breathInterval);
+      breathInterval = null;
+      breathRemaining = 90;
+      breathPhase.textContent = 'READY';
+      breathTimerEl.textContent = '01:30';
+      breathOrb.style.transform = 'scale(1)';
+    });
+
+    const quizContainer = document.getElementById('quiz-questions');
+    const quizScores = {};
+    EQ_ASSESSMENT_ITEMS.forEach(item => {
+      quizScores[item.id] = 3;
+      const row = document.createElement('div');
+      row.className = 'rounded-xl bg-white/5 border border-white/10 p-3 space-y-2';
+      row.innerHTML = `
+        <div class="flex items-center justify-between text-[10px] font-bold text-amber-400">
+          <span>${String(item.id).padStart(2, '0')} • ${item.rule}</span>
+          <span id="qval-${item.id}" class="text-teal-300">3 / 5</span>
+        </div>
+        <p class="text-xs text-slate-200">${item.text}</p>
+        <div class="flex items-center justify-between gap-1 pt-1">
+          ${[1, 2, 3, 4, 5].map(v => `
+            <button data-qid="${item.id}" data-val="${v}" class="q-opt flex-1 py-1 rounded-lg text-[11px] font-bold border transition ${v === 3 ? 'bg-amber-400 text-slate-950 border-amber-400' : 'bg-slate-900/70 text-slate-300 border-white/10 hover:border-amber-400/50'}">
+              ${v}
+            </button>
+          `).join('')}
+        </div>
+      `;
+      quizContainer.appendChild(row);
+    });
+
+    quizContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.q-opt');
+      if (!btn) return;
+      const qid = parseInt(btn.dataset.qid, 10);
+      const val = parseInt(btn.dataset.val, 10);
+      quizScores[qid] = val;
+      document.getElementById(`qval-${qid}`).textContent = `${val} / 5`;
+      btn.parentElement.querySelectorAll('.q-opt').forEach(b => {
+        if (parseInt(b.dataset.val, 10) === val) {
+          b.className = 'q-opt flex-1 py-1 rounded-lg text-[11px] font-bold border transition bg-amber-400 text-slate-950 border-amber-400';
+        } else {
+          b.className = 'q-opt flex-1 py-1 rounded-lg text-[11px] font-bold border transition bg-slate-900/70 text-slate-300 border-white/10 hover:border-amber-400/50';
+        }
+      });
+    });
+
+    document.getElementById('btn-calc-quiz').addEventListener('click', () => {
+      let total = 0;
+      const styleTotals = {
+        'Reflective Regulator': 0,
+        'Empathic Connector': 0,
+        'Triggered Achiever': 0,
+        'Boundary Builder': 0,
+        'Resilient Reframer': 0
+      };
+      const styleCounts = {
+        'Reflective Regulator': 0,
+        'Empathic Connector': 0,
+        'Triggered Achiever': 0,
+        'Boundary Builder': 0,
+        'Resilient Reframer': 0
+      };
+
+      EQ_ASSESSMENT_ITEMS.forEach(item => {
+        const s = quizScores[item.id] || 3;
+        total += s;
+        styleTotals[item.style] += s;
+        styleCounts[item.style] += 1;
+      });
+
+      let bestStyle = 'Reflective Regulator';
+      let bestAvg = -1;
+      Object.keys(styleTotals).forEach(st => {
+        const avg = styleTotals[st] / styleCounts[st];
+        if (avg > bestAvg) {
+          bestAvg = avg;
+          bestStyle = st;
+        }
+      });
+
+      let guideText = '';
+      if (total >= 40) guideText = '40–50: Strong EQ foundation. Keep refining and modeling these habits.';
+      else if (total >= 30) guideText = '30–39: Good awareness with room to strengthen consistency.';
+      else if (total >= 20) guideText = '20–29: You are ready for meaningful growth by practicing these tools daily.';
+      else guideText = '10–19: Start small and stay compassionate. Awareness is the first win.';
+
+      const profile = CHANNEL_STYLE_PROFILES[bestStyle];
+      document.getElementById('quiz-score-badge').textContent = `${total} / 50`;
+      document.getElementById('quiz-style-title').textContent = profile.title;
+      document.getElementById('quiz-style-desc').textContent = profile.desc;
+      document.getElementById('quiz-score-guide').textContent = guideText;
+      document.getElementById('quiz-result').classList.remove('hidden');
+      playChimeSound();
+    });
+
+    // =========================================================================
+    // 12. ANIMATION & RENDER LOOP
+    // =========================================================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      try {
+        const dt = Math.min(clock.getDelta(), 0.05);
+        const t = clock.getElapsedTime();
+
+        if (isFlipping) {
+          const speed = 2.6;
+          flipProgress += flipDirection * dt * speed;
+
+          if ((flipDirection === 1 && flipProgress >= 1) || (flipDirection === -1 && flipProgress <= 0)) {
+            isFlipping = false;
+            turningGroup.visible = false;
+            renderSpread(flipTargetSpread);
+          } else {
+            deformTurningPage(flipProgress, flipDirection);
+            if (currentSpread === 0 && flipDirection === 1) {
+              bookRoot.position.x = THREE.MathUtils.lerp(-PAGE_W * 0.5, 0, flipProgress);
+            } else if (flipTargetSpread === 0 && flipDirection === -1) {
+              bookRoot.position.x = THREE.MathUtils.lerp(-PAGE_W * 0.5, 0, flipProgress);
+            }
+          }
+        }
+
+        bookRoot.position.y = 1.035 + Math.sin(t * 1.4) * 0.004;
+        particles.rotation.y = t * 0.035;
+
+        const eqActive = isSpeaking || isAmbientPlaying;
+        const miniBars = document.querySelectorAll('#music-eq-bars span');
+        if (miniBars.length) {
+          miniBars.forEach((bar, idx) => {
+            const h = eqActive ? (4 + Math.abs(Math.sin(t * (5 + idx * 1.7) + idx)) * 11) : 4;
+            bar.style.height = `${h.toFixed(1)}px`;
+          });
+        }
+        if (envStudioGroup.visible) {
+          studioEqBars.forEach((bar, idx) => {
+            bar.scale.y = 0.4 + Math.abs(Math.sin(t * 3.5 + idx * 0.6)) * 1.6;
+          });
+        }
+
+        if (!renderer.xr || !renderer.xr.isPresenting) {
+          camera.position.lerp(targetCamPos, 0.08);
+          controls.update();
+        }
+
+        renderer.render(scene, camera);
+      } catch (err) {
+        console.warn('Render frame guarded:', err);
+      }
+    }
+
+    try {
+      renderer.setAnimationLoop(animate);
+    } catch (e) {
+      function fallbackLoop() {
+        animate();
+        requestAnimationFrame(fallbackLoop);
+      }
+      requestAnimationFrame(fallbackLoop);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    try {
+      renderSpread(0);
+      syncMusicUI();
+    } catch (e) {
+      console.warn('Initial UI sync guarded:', e);
+    }
+  </script>
+</body>
 </html>
