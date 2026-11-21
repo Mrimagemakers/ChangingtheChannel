@@ -502,7 +502,7 @@
               </div>
               <div>
                 <div class="text-xs font-bold text-white">Narrated by Lamont Hightower</div>
-                <div class="text-[11px] text-slate-400" id="voice-engine-status">Google Drive • ElevenLabs AI • Browser Fallback</div>
+                <div class="text-[11px] text-slate-400" id="voice-engine-status">Audiobook Recording • ElevenLabs AI • Browser Fallback</div>
               </div>
             </div>
             <div class="flex items-center gap-1.5">
@@ -519,17 +519,17 @@
             <div>
               <label class="block text-[10px] font-bold uppercase tracking-wider text-teal-300 mb-1">Narration Engine (Narrator: Lamont Hightower)</label>
               <select id="narration-source-mode" class="w-full rounded-lg bg-slate-950/85 border border-white/15 px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-teal-400">
-                <option value="gdrive">Google Drive Audio (Lamont Hightower Recording)</option>
+                <option value="gdrive">Lamont Hightower Audiobook Recording (Recommended)</option>
                 <option value="elevenlabs">ElevenLabs AI Voice Synthesis</option>
                 <option value="webspeech">Browser Web Speech Fallback</option>
               </select>
             </div>
 
             <div id="gdrive-audio-config" class="space-y-2 rounded-xl bg-slate-950/70 border border-teal-400/20 p-2.5">
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-amber-300">Google Drive Audio Link or File ID</label>
-              <input id="gdrive-audio-url" type="text" class="w-full rounded-lg bg-slate-950/90 border border-white/15 px-2.5 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Paste Google Drive file link, ID, or direct MP3/WAV URL..." />
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-amber-300">Optional: Override With Your Own Audio Link</label>
+              <input id="gdrive-audio-url" type="text" class="w-full rounded-lg bg-slate-950/90 border border-white/15 px-2.5 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Leave blank to use the built-in chapter recordings..." />
               <p class="text-[10px] text-slate-400 leading-relaxed">
-                Share the Google Drive audio file as <em>Anyone with the link can view</em> (or paste a direct audio URL). If unavailable, it automatically falls back to ElevenLabs or Web Speech.
+                Each spread plays its own chapter recording by Lamont Hightower, hosted with this site. Paste a direct MP3/WAV URL (or a Google Drive link shared as <em>Anyone with the link</em>) only to replace it. If a recording can't play, narration falls back to ElevenLabs or Web Speech.
               </p>
             </div>
           </div>
@@ -567,7 +567,7 @@
           </div>
 
           <div class="flex items-center justify-between text-[11px] text-slate-300 bg-slate-950/60 px-3 py-2 rounded-lg border border-white/5">
-            <span id="narration-progress-label">Lamont Hightower • 15 Spreads Ready</span>
+            <span id="narration-progress-label">Lamont Hightower • 15 Chapters Ready</span>
             <button id="btn-stop-narration-media" class="text-rose-300 hover:text-rose-200 font-semibold hidden">
               <i class="fa-solid fa-stop mr-1"></i>Stop
             </button>
@@ -1688,10 +1688,6 @@
       }
       return audioCtx;
     }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-    }
 
     function playPaperFlipSound() {
       try {
@@ -2063,26 +2059,26 @@
     // 4. LAMONT HIGHTOWER NARRATION ENGINE (GOOGLE DRIVE + ELEVENLABS + SPEECH)
     // =========================================================================
     const NARRATOR_NAME = 'Lamont Hightower';
-    const LAMONT_DRIVE_TRACKS = [
-      'https://drive.google.com/file/d/1U_-gV5NwbqwxZYLmXJMT8HV2b5K3VWi_/view?usp=drive_link',
-      'https://drive.google.com/file/d/1uIvDltGuTyAgTJmumlUlAQa2xrWE0q80/view?usp=drive_link',
-      'https://drive.google.com/file/d/1FeoquVb3B2WGYDCsGD3j8hILN15lmc-I/view?usp=drive_link',
-      'https://drive.google.com/file/d/1bZkjr_GsGkTEpt58NXwyF6pXgov6eLqX/view?usp=drive_link',
-      'https://drive.google.com/file/d/1N3hik2EiCN-lZ_kQPMqqw_mDCh4LVUyX/view?usp=drive_link',
-      'https://drive.google.com/file/d/1r-jXP2BNOCP0A_GFmwzF67KjddDgSDiD/view?usp=drive_link',
-      'https://drive.google.com/file/d/1tq6ky3MtvkpR9GYEAl5I70iRZDLjBJFr/view?usp=drive_link',
-      'https://drive.google.com/file/d/18X5GluqXDHFZWQdw0fi9vEtBb14p-CEt/view?usp=drive_link',
-      'https://drive.google.com/file/d/1ds3Gz5xnFvA7c-2OAwbZe_3AVagBeBYl/view?usp=drive_link',
-      'https://drive.google.com/file/d/1tyJScjr0sIBRsnotapJ0kdIeI74LA4-i/view?usp=drive_link',
-      'https://drive.google.com/file/d/1uxt1pwyNZFaeCxtntl__s0hfHLN5UmsJ/view?usp=drive_link',
-      'https://drive.google.com/file/d/1s6gagdRLcxaYmlxYMo5PiHpZfgVitCdb/view?usp=drive_link',
-      'https://drive.google.com/file/d/1jUmwZeA90EmZp23Ul8sqX4r5KE9KYWmw/view?usp=drive_link',
-      'https://drive.google.com/file/d/1nb7GbmuOzC9tWcCNBs4AlbbrWXaU2Cto/view?usp=drive_link',
-      'https://drive.google.com/file/d/1texq7qfgx2W_blCCQGSea1dBTAeh4vjd/view?usp=drive_link',
-      'https://drive.google.com/file/d/1c2UgVLTqKnTtVOF95hfbGsaj9Xhpcemf/view?usp=drive_link',
-      'https://drive.google.com/file/d/1N9K8_8vV-RrbT34672G3XJ9CYw98o2Su/view?usp=drive_link',
-      'https://drive.google.com/file/d/1DHHhlU5CRBSxhKFSndR7vdI_fAdemPxh/view?usp=drive_link'
+    // Lamont Hightower audiobook recordings, one per book spread (index = spread id).
+    // Files live in /audio/narration so GitHub Pages serves them directly.
+    const NARRATION_TRACKS = [
+      'audio/narration/00-book-intro.mp3',     // 0  Cover
+      'audio/narration/01-dedication.mp3',     // 1  Dedication & Channel Guide
+      'audio/narration/02-introduction.mp3',   // 2  Intro: The Power of Changing the Channel
+      'audio/narration/03-rule-01.mp3',        // 3  Rule 1: Name It to Tame It
+      'audio/narration/04-rule-02.mp3',        // 4  Rule 2: Pause Before You Play
+      'audio/narration/05-rule-03.mp3',        // 5  Rule 3: Feelings Are Feedback, Not Facts
+      'audio/narration/06-rule-04.mp3',        // 6  Rule 4: Flip the Script
+      'audio/narration/07-rule-05.mp3',        // 7  Rule 5: Empathy Is Your Superpower
+      'audio/narration/08-rule-06.mp3',        // 8  Rule 6: Boundaries Build Freedom
+      'audio/narration/09-rule-07.mp3',        // 9  Rule 7: The Mood Follows the Motion
+      'audio/narration/10-rule-08.mp3',        // 10 Rule 8: Check Your Triggers
+      'audio/narration/11-rule-09.mp3',        // 11 Rule 9: Respond, Don't React
+      'audio/narration/12-rule-10.mp3',        // 12 Rule 10: Grow Through What You Go Through
+      'audio/narration/13-conclusion.mp3',     // 13 Conclusion
+      'audio/narration/14-outro.mp3'           // 14 Bonus Features & Final Encouragement
     ];
+    const NARRATION_TRACK_COUNT = NARRATION_TRACKS.length;
 
     let isSpeaking = false;
     let isFullBookMode = false;
@@ -2104,7 +2100,9 @@
       narrationSourceSelect.value = localStorage.getItem('ctc_narration_mode');
     }
     if (gdriveAudioUrlInput) {
-      gdriveAudioUrlInput.value = localStorage.getItem('ctc_gdrive_audio_url') || LAMONT_DRIVE_TRACKS[0];
+      // Old builds stored a private Drive link here by default; ignore that and use the hosted recordings.
+      localStorage.removeItem('ctc_gdrive_audio_url');
+      gdriveAudioUrlInput.value = localStorage.getItem('ctc_custom_audio_url') || '';
     }
     if (elevenVoiceSelect && localStorage.getItem('ctc_eleven_voice')) {
       elevenVoiceSelect.value = localStorage.getItem('ctc_eleven_voice');
@@ -2131,7 +2129,7 @@
       syncNarrationModeUI();
     });
     gdriveAudioUrlInput?.addEventListener('input', () => {
-      localStorage.setItem('ctc_gdrive_audio_url', gdriveAudioUrlInput.value.trim());
+      localStorage.setItem('ctc_custom_audio_url', gdriveAudioUrlInput.value.trim());
       updateVoiceStatusLabel();
     });
     elevenVoiceSelect?.addEventListener('change', () => {
@@ -2164,11 +2162,10 @@
 
     function getDriveUrlForSpread(spreadIdx) {
       const customOverride = (gdriveAudioUrlInput?.value || '').trim();
-      if (customOverride && customOverride !== LAMONT_DRIVE_TRACKS[0]) {
+      if (customOverride) {
         return resolveGoogleDriveAudioUrl(customOverride);
       }
-      const mapped = LAMONT_DRIVE_TRACKS[spreadIdx] || LAMONT_DRIVE_TRACKS[0];
-      return resolveGoogleDriveAudioUrl(mapped);
+      return NARRATION_TRACKS[spreadIdx] || '';
     }
 
     function getSelectedVoiceId() {
@@ -2191,7 +2188,7 @@
 
       if (statusEl) {
         if (mode === 'gdrive') {
-          statusEl.textContent = `Narrator: ${NARRATOR_NAME} • 18 Google Drive Tracks Linked`;
+          statusEl.textContent = `Narrator: ${NARRATOR_NAME} • ${NARRATION_TRACK_COUNT} Audiobook Chapters`;
         } else if (mode === 'elevenlabs') {
           statusEl.textContent = hasEleven
             ? `Narrator: ${NARRATOR_NAME} • ElevenLabs AI (${elevenModelSelect?.value || 'multilingual_v2'})`
@@ -2258,7 +2255,7 @@
       if (icon) icon.className = 'fa-solid fa-volume-high text-amber-400';
       if (label) label.textContent = 'Read Aloud';
       if (stopBtn) stopBtn.classList.add('hidden');
-      updateVoiceStatusLabel(`Stopped • ${NARRATOR_NAME} • 18 Drive Tracks Ready`);
+      updateVoiceStatusLabel(`Stopped • ${NARRATOR_NAME} • ${NARRATION_TRACK_COUNT} Chapters Ready`);
     }
 
     function speakWithWebSpeech(text, onDone) {
@@ -2346,20 +2343,33 @@
         const streamUrl = getDriveUrlForSpread(spreadIdx);
         if (streamUrl) {
           try {
-            updateVoiceStatusLabel(`Playing Drive Track #${spreadIdx + 1} (${NARRATOR_NAME})...`);
-            currentDriveAudio = new Audio(streamUrl);
-            currentDriveAudio.onended = () => {
+            updateVoiceStatusLabel(`Playing Chapter ${spreadIdx + 1}/${NARRATION_TRACK_COUNT} — ${NARRATOR_NAME}`);
+            const audio = new Audio(streamUrl);
+            audio.preload = 'auto';
+            currentDriveAudio = audio;
+            let fellBack = false;
+            const fallback = () => {
+              // Ignore events from a recording that was stopped or replaced, and only fall back once.
+              if (fellBack || currentDriveAudio !== audio || !isSpeaking) return;
+              fellBack = true;
+              currentDriveAudio = null;
+              showToast('Recording unavailable — falling back to ElevenLabs/Speech');
+              speakWithElevenLabs(text, onDone);
+            };
+            audio.onended = () => {
+              if (currentDriveAudio !== audio) return;
+              currentDriveAudio = null;
               if (onDone) onDone();
               else stopNarration();
             };
-            currentDriveAudio.onerror = () => {
-              showToast('Drive stream blocked/unavailable — falling back to ElevenLabs/Speech');
-              speakWithElevenLabs(text, onDone);
-            };
-            await currentDriveAudio.play();
+            audio.onerror = fallback;
+            await audio.play();
             return;
           } catch (err) {
-            speakWithElevenLabs(text, onDone);
+            if (err && err.name === 'AbortError') return;
+            const a = currentDriveAudio;
+            if (a && a.onerror) a.onerror();
+            else if (isSpeaking) speakWithElevenLabs(text, onDone);
             return;
           }
         }
@@ -2376,7 +2386,7 @@
     }
 
     function playNextFullBookSpread() {
-      if (!isFullBookMode || fullBookQueueIndex >= LAMONT_DRIVE_TRACKS.length) {
+      if (!isFullBookMode || fullBookQueueIndex >= NARRATION_TRACK_COUNT) {
         showToast(`Full Book Narration by ${NARRATOR_NAME} Complete`);
         stopNarration();
         return;
@@ -2387,7 +2397,7 @@
         flipToSpread(spreadTarget);
       }
       const sp = BOOK_SPREADS[spreadTarget];
-      updateVoiceStatusLabel(`${NARRATOR_NAME} • Track ${trackIdx + 1}/${LAMONT_DRIVE_TRACKS.length}: ${sp.chapterLabel}`);
+      updateVoiceStatusLabel(`${NARRATOR_NAME} • Track ${trackIdx + 1}/${NARRATION_TRACK_COUNT}: ${sp.chapterLabel}`);
       const script = buildSpreadNarrationScript(spreadTarget);
       playNarrationSegment(script, () => {
         fullBookQueueIndex++;
@@ -2410,7 +2420,7 @@
         return;
       }
       const sp = BOOK_SPREADS[currentSpread];
-      updateVoiceStatusLabel(`${NARRATOR_NAME} • Track ${currentSpread + 1}/${LAMONT_DRIVE_TRACKS.length}: ${sp.chapterLabel}`);
+      updateVoiceStatusLabel(`${NARRATOR_NAME} • Track ${currentSpread + 1}/${NARRATION_TRACK_COUNT}: ${sp.chapterLabel}`);
       speakText(buildSpreadNarrationScript(currentSpread), currentSpread);
     }
 
@@ -2426,7 +2436,7 @@
       document.getElementById('narrate-icon').className = 'fa-solid fa-stop text-rose-400';
       document.getElementById('narrate-label').textContent = 'Stop Book';
       document.getElementById('btn-stop-narration-media')?.classList.remove('hidden');
-      showToast(`Full Book Narration (${NARRATOR_NAME}) — 18 Drive Tracks`);
+      showToast(`Full Book Narration (${NARRATOR_NAME}) — ${NARRATION_TRACK_COUNT} Chapters`);
       playNextFullBookSpread();
     }
 
