@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Changing the Channel - WebXR 3D Flipbook</title>
+    <style>
+      :root { color-scheme: dark; --accent: #8ee7ff; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; overflow: hidden;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: #edfaff;
+        background: radial-gradient(circle at 50% 35%, #1d3a52 0, #09131e 48%, #03070b 100%);
+      }
+      .shell { position: relative; z-index: 2; height: 100vh; display: grid; place-items: center; }
+      .copy { position: absolute; top: 24px; left: 24px; max-width: 480px; }
+      h1 { margin: 0 0 8px; font-size: clamp(24px, 4vw, 46px); }
+      p { margin: 0; color: #b5cad6; }
+      .controls { position: absolute; bottom: 24px; display: flex; gap: 12px; z-index: 5; }
+      button {
+        border: 1px solid rgba(142, 231, 255, .4); border-radius: 999px;
+        padding: 12px 18px; color: white; background: rgba(8, 24, 36, .82);
+        backdrop-filter: blur(12px); cursor: pointer;
+      }
+      button:hover { background: rgba(33, 71, 94, .95); }
+      .scene {
+        width: 520px; max-width: 85vw; height: 360px;
+        perspective: 1200px; transform-style: preserve-3d;
+      }
+      .book {
+        position: relative; width: 100%; height: 100%;
+        transform-style: preserve-3d; transform: rotateX(8deg) rotateY(-14deg);
+        transition: transform .8s ease;
+      }
+      .book.dragging { transition: none; }
+      .page {
+        position: absolute; inset: 0;
+        border: 1px solid rgba(142, 231, 255, .25); border-radius: 8px;
+        background: linear-gradient(135deg, rgba(25, 57, 78, .96), rgba(7, 18, 28, .98));
+        box-shadow: 0 28px 80px rgba(0, 0, 0, .45);
+        display: grid; place-items: center; text-align: center; padding: 44px;
+        transform-origin: left center; transition: transform .8s cubic-bezier(.2,.75,.2,1);
+        backface-visibility: hidden;
+      }
+      .page:nth-child(1) { transform: translateZ(-12px); }
+      .page:nth-child(2) { transform: translateZ(-8px); }
+      .page:nth-child(3) { transform: translateZ(-4px); }
+      .page:nth-child(4) { transform: translateZ(0); }
+      .page.turning { transform: rotateY(-158deg); }
+      .page strong { display: block; color: var(--accent); letter-spacing: .12em; margin-bottom: 12px; }
+      .page h2 { margin: 0 0 12px; font-size: clamp(28px, 5vw, 52px); }
+      .page span { color: #b5cad6; line-height: 1.6; }
+      canvas#xrCanvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    </style>
+  </head>
+  <body>
+    <canvas id="xrCanvas" aria-hidden="true"></canvas>
+    <main class="shell">
+      <header class="copy">
+        <h1>Changing the Channel</h1>
+        <p>A spatial story about what we choose to tune in.</p>
+      </header>
+      <section class="scene" aria-label="Interactive 3D flipbook">
+        <div class="book" id="book">
+          <article class="page"><div><strong>PAGE 01</strong><h2>Stay Curious</h2><span>Every new frequency opens a different view.</span></div></article>
+          <article class="page"><div><strong>PAGE 02</strong><h2>Shift Perspective</h2><span>Move the book, turn the page, change the story.</span></div></article>
+          <article class="page"><div><strong>PAGE 03</strong><h2>Find Signal</h2><span>In the noise, choose the voices that move you.</span></div></article>
+          <article class="page"><div><strong>PAGE 04</strong><h2>Open Channel</h2><span>The next transmission is yours to make.</span></div></article>
+        </div>
+      </section>
+      <nav class="controls" aria-label="Flipbook controls">
+        <button id="prev" type="button">Previous</button>
+        <button id="next" type="button">Next</button>
+        <button id="xr" type="button" hidden>Enter XR</button>
+      </nav>
+    </main>
+    <script>
+      const pages = [...document.querySelectorAll('.page')];
+      const book = document.getElementById('book');
+      const xrButton = document.getElementById('xr');
+      let position = 0;
+
+      function update() {
+        pages.forEach((page, i) => page.classList.toggle('turning', i < position));
+      }
+      document.getElementById('next').addEventListener('click', () => {
+        position = Math.min(pages.length, position + 1); update();
+      });
+      document.getElementById('prev').addEventListener('click', () => {
+        position = Math.max(0, position - 1); update();
+      });
+
+      let dragging = false, startX = 0, startY = 0, yaw = -14, pitch = 8;
+      book.addEventListener('pointerdown', event => {
+        dragging = true; startX = event.clientX; startY = event.clientY;
+        book.classList.add('dragging'); book.setPointerCapture(event.pointerId);
+      });
+      book.addEventListener('pointermove', event => {
+        if (!dragging) return;
+        yaw += (event.clientX - startX) * .12;
+        pitch -= (event.clientY - startY) * .08;
+        pitch = Math.max(-25, Math.min(35, pitch));
+        book.style.transform = `rotateX(${pitch}deg) rotateY(${yaw}deg)`;
+        startX = event.clientX; startY = event.clientY;
+      });
+      book.addEventListener('pointerup', () => {
+        dragging = false; book.classList.remove('dragging');
+      });
+
+      let xrSession = null;
+      if (navigator.xr) {
+        navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+          xrButton.hidden = !supported;
+        });
+      }
+      xrButton.addEventListener('click', async () => {
+        if (xrSession) { await xrSession.end(); return; }
+        xrSession = await navigator.xr.requestSession('immersive-vr', {
+          requiredFeatures: ['local-floor']
+        });
+        xrButton.textContent = 'Exit XR';
+        xrSession.addEventListener('end', () => {
+          xrSession = null; xrButton.textContent = 'Enter XR';
+        });
+      });
+    </script>
+  </body>
+</html>
