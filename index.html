@@ -630,6 +630,7 @@
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
     import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
     import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+    import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
     // Safe global error guard so UI buttons never silently freeze if an API throws
     window.addEventListener('error', (ev) => {
@@ -2588,7 +2589,7 @@
       studio: {
         skyTop: '#04010c', skyHorizon: '#2b0b40', skyBottom: '#04010c', sunColor: '#6d1458', sunDir: [0, 0.14, -1], sunSize: 18,
         fog: '#0c0517', fogDensity: 0.03, hemiSky: '#c084fc', hemiGround: '#12051f', hemiInt: 0.5,
-        key: '#ffffff', keyInt: 2.7, rimA: '#ec4899', rimAInt: 3.2, rimB: '#22d3ee', rimBInt: 3.2,
+        key: '#fff1e0', keyInt: 2.8, rimA: '#f472b6', rimAInt: 1.4, rimB: '#7dd3fc', rimBInt: 0.9,
         exposure: 1.05, bloom: 1.05, stars: 0.3, aurora: 0, aur1: '#22ffaa', aur2: '#a855f7', mote: '#f472b6', envInt: 0.45
       },
       aurora: {
@@ -2751,7 +2752,7 @@
     function rebuildEnvMap() {
       try {
         const rt = pmrem.fromScene(envScene, 0, 0.1, 400);
-        scene.environment = rt.texture;
+        scene.environment = (typeof HDR_ENV !== 'undefined' && HDR_ENV[currentEnv]) || rt.texture;
         if (envRT) envRT.dispose();
         envRT = rt;
       } catch (e) {
@@ -4358,7 +4359,7 @@
           const x = (c - 0.5) * 0.98;
           const y = 0.38 + r * 0.74;
           add(stack, new THREE.BoxGeometry(0.92, 0.7, 0.72), M(r % 2 ? '#2a2633' : '#3b3545', { roughness: 0.6 }), x, y, 0);
-          const sMat = new THREE.MeshBasicMaterial({ color: '#22d3ee', toneMapped: false });
+          const sMat = new THREE.MeshBasicMaterial({ color: '#1b8fa3' });
           add(stack, new THREE.PlaneGeometry(0.66, 0.5), sMat, x - 0.04, y + 0.02, 0.365);
           add(stack, new THREE.CylinderGeometry(0.025, 0.025, 0.02, 8), M('#9ca3af'), x + 0.38, y - 0.15, 0.37, { rx: Math.PI / 2 });
           crtScreens.push(sMat);
@@ -4500,7 +4501,7 @@
         parCans.forEach((p, i) => p.lensMat.color.setHSL((t * 0.05 + i * 0.09) % 1, 0.9, 0.55 + bass * 0.2));
         consoleLeds.forEach((led, i) => { led.scale.z = 0.25 + (eqLevels[i * 2 % eqLevels.length] || 0) * 2.2; });
         if (Math.floor(t * 2) !== Math.floor((t - dt) * 2)) {
-          crtScreens.forEach(s => { if (Math.random() < 0.35) s.color.setHSL(Math.random(), 0.8, rand(0.25, 0.55)); });
+          crtScreens.forEach(s => { if (Math.random() < 0.35) s.color.setHSL(Math.random(), 0.7, rand(0.18, 0.34)); });
         }
         for (let i = 0; i < skylineCount; i++) {
           const b = skylineBase[i];
@@ -4529,6 +4530,280 @@
         stepFalling(smoke, t, dt * 1.4, 1, 0.006);
       }
     }
+
+    // =====================================================================
+    // REAL-WORLD MATERIALS (CC0 / CC-BY photo textures + HDR lighting — see CREDITS.md)
+    // =====================================================================
+    const texLoader = new THREE.TextureLoader();
+    const _texCache = {};
+    function loadTex(name, repeat = [1, 1], isColor = false) {
+      const key = name + ':' + repeat.join('x');
+      if (_texCache[key]) return _texCache[key];
+      const t = texLoader.load('assets/textures/' + name);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(repeat[0], repeat[1]);
+      t.anisotropy = IS_MOBILE ? 4 : 8;
+      if (isColor) t.colorSpace = THREE.SRGBColorSpace;
+      _texCache[key] = t;
+      return t;
+    }
+    function dress(mat, { map, normal, bump, rough, repeat = [1, 1], color, normalScale = 1, bumpScale = 1.5, roughness, metalness } = {}) {
+      if (map) mat.map = loadTex(map, repeat, true);
+      if (normal) { mat.normalMap = loadTex(normal, repeat); mat.normalScale = new THREE.Vector2(normalScale, normalScale); }
+      if (bump) { mat.bumpMap = loadTex(bump, repeat); mat.bumpScale = bumpScale; }
+      if (rough) mat.roughnessMap = loadTex(rough, repeat);
+      if (color) mat.color.set(color);
+      if (roughness !== undefined) mat.roughness = roughness;
+      if (metalness !== undefined) mat.metalness = metalness;
+      mat.flatShading = false;
+      mat.needsUpdate = true;
+      return mat;
+    }
+
+    // Photographed lighting environments for reflections (Poly Haven HDRIs, CC0)
+    const HDR_ENV = {};
+    function loadHdrEnv(key, file) {
+      try {
+        new RGBELoader().load('assets/hdri/' + file, (hdr) => {
+          hdr.mapping = THREE.EquirectangularReflectionMapping;
+          HDR_ENV[key] = pmrem.fromEquirectangular(hdr).texture;
+          hdr.dispose();
+          if (currentEnv === key) scene.environment = HDR_ENV[key];
+        }, undefined, () => {});
+      } catch (e) {}
+    }
+    loadHdrEnv('studio', 'studio.hdr');
+    loadHdrEnv('horizon', 'sunset.hdr');
+
+    // ---- Sanctuary: stone pavers, carved stone, cherry bark, lacquered pagoda ----
+    dress(floorMat, { map: 'pavers_color.jpg', normal: 'pavers_normal.jpg', repeat: [16, 16], color: '#7c8098', roughness: 0.55, metalness: 0.05, normalScale: 1.2 });
+    dress(pillarMat, { map: 'stone_color.jpg', normal: 'stone_normal.jpg', repeat: [1.5, 2.5], color: '#b8bdd4', roughness: 0.85, metalness: 0.0 });
+    dress(toroStone, { map: 'stone_color.jpg', normal: 'stone_normal.jpg', repeat: [1, 1], color: '#c3c6d2', roughness: 0.9 });
+    dress(toroDark, { map: 'stone_color.jpg', normal: 'stone_normal.jpg', repeat: [1, 1], color: '#8a8ea0', roughness: 0.92 });
+    dress(barkMat, { map: 'bark_color.jpg', normal: 'bark_normal.jpg', repeat: [1, 2.5], color: '#a08070', roughness: 0.95, normalScale: 1.4 });
+    dress(M('#5b1d1d', { roughness: 0.8 }), { map: 'wood_color.jpg', bump: 'wood_bump.jpg', repeat: [1, 0.5], color: '#a3301f', roughness: 0.35, metalness: 0.1, bumpScale: 1 });
+    dress(M('#2a2d3e'), { map: 'pavers_color.jpg', normal: 'pavers_normal.jpg', repeat: [3, 0.4], color: '#9aa0b8' });
+    dress(M('#4b5068', { roughness: 0.9 }), { map: 'stone_color.jpg', normal: 'stone_normal.jpg', repeat: [0.6, 0.6], color: '#c9ccd8' });
+
+    // ---- Calm Horizon: hardwood deck, sand islet, rocky islands ----
+    dress(deckTopMat, { map: 'wood_color.jpg', bump: 'wood_bump.jpg', rough: 'wood_rough.jpg', repeat: [2.5, 2.5], color: '#c89a72', roughness: 0.85, bumpScale: 2 });
+    dress(deckSideMat, { map: 'wood_color.jpg', bump: 'wood_bump.jpg', repeat: [6, 0.4], color: '#6e4a30', roughness: 0.8 });
+    dress(railMat, { map: 'wood_color.jpg', repeat: [2, 0.2], color: '#8a5f3e', roughness: 0.6 });
+    dress(M('#e7c48f', { roughness: 0.95 }), { map: 'sand_color.jpg', repeat: [3, 3], color: '#ffe9c8', roughness: 1 });
+    dress(islandMat, { map: 'gravel_color.jpg', normal: 'gravel_normal.jpg', repeat: [3, 2], color: '#7a5f72', roughness: 1 });
+
+    // ---- Aurora Night: cracked lake ice, snow, mountain rock, log cabin ----
+    dress(ice.material, { map: 'ice_color.jpg', normal: 'ice_normal.jpg', rough: 'ice_rough.jpg', repeat: [36, 36], color: '#a9c7e6', roughness: 0.35, metalness: 0.35, normalScale: 0.8 });
+    dress(snowIsland.material, { map: 'snow_color.jpg', normal: 'snow_normal.jpg', repeat: [3, 3], roughness: 0.9 });
+    dress(rockMat, { map: 'stone_color.jpg', normal: 'stone_normal.jpg', repeat: [5, 3], color: '#55607a', roughness: 0.95 });
+    dress(snowMat, { map: 'snow_color.jpg', normal: 'snow_normal.jpg', repeat: [3, 2], roughness: 0.85 });
+    dress(pineSnow, { map: 'snow_color.jpg', normal: 'snow_normal.jpg', repeat: [1, 1], roughness: 0.85 });
+    dress(logMat, { map: 'wood_color.jpg', bump: 'wood_bump.jpg', repeat: [1.5, 1], color: '#8a5a3a', roughness: 0.85 });
+    logMat.map.rotation = 0;
+    dress(logBark, { map: 'bark_color.jpg', normal: 'bark_normal.jpg', repeat: [1, 1], color: '#7a5a48' });
+    dress(M('#3a4252', { roughness: 0.95, flatShading: true }), { map: 'stone_color.jpg', normal: 'stone_normal.jpg', repeat: [1, 1], color: '#6a7488' });
+    dress(M('#f1f7ff', { roughness: 0.85, flatShading: true }), { map: 'snow_color.jpg', normal: 'snow_normal.jpg', repeat: [1, 1] });
+
+    // ---- Ocean: layered, scrolling photo normal maps for real ripples and glints ----
+    const waterNormalTex = loadTex('water_normal.jpg', [1, 1]);
+    oceanUniforms.uNormalMap = { value: waterNormalTex };
+    oceanMat.fragmentShader = oceanMat.fragmentShader
+      .replace('uniform float uFogDensity;', 'uniform float uFogDensity;\n        uniform sampler2D uNormalMap;\n        uniform float uTime;')
+      .replace('vec3 N = normalize(vNormalW);', `vec2 wuv = vWorld.xz;
+          vec3 n1 = texture2D(uNormalMap, wuv * 0.045 + vec2(uTime * 0.012, uTime * 0.008)).rgb * 2.0 - 1.0;
+          vec3 n2 = texture2D(uNormalMap, wuv * 0.11 - vec2(uTime * 0.009, -uTime * 0.014)).rgb * 2.0 - 1.0;
+          vec3 ripple = normalize(vec3(n1.x + n2.x, 2.2, n1.y + n2.y));
+          float near = 1.0 - smoothstep(30.0, 120.0, length(vWorld - cameraPosition));
+          vec3 N = normalize(normalize(vNormalW) + vec3(ripple.x, 0.0, ripple.z) * (0.55 * near + 0.15));`);
+    oceanMat.needsUpdate = true;
+
+    // =====================================================================
+    // EQ STUDIO REBUILD — a real broadcast studio, not a neon grid
+    // =====================================================================
+    // Hide the generic sci-fi pieces
+    skyline.visible = false;
+    studioBeams.forEach(b => { b.beam.visible = false; });
+    neonRings.forEach(n => { n.ring.visible = false; });
+    vinyls.forEach(v => { v.g.visible = false; });
+
+    // Floor: warm hardwood with a branded round rug under the lectern
+    gridFloor.geometry.dispose();
+    gridFloor.geometry = new THREE.CircleGeometry(16, 96);
+    gridFloor.material = dress(new THREE.MeshStandardMaterial({ envMapIntensity: 0.6 }), { map: 'wood_color.jpg', bump: 'wood_bump.jpg', repeat: [7, 7], color: '#7a5640', roughness: 0.82, bumpScale: 1.5 });
+    gridFloor.receiveShadow = true;
+
+    function makeRugTexture() {
+      const S = 1024, c = document.createElement('canvas');
+      c.width = c.height = S;
+      const g = c.getContext('2d');
+      const cx = S / 2;
+      g.fillStyle = '#0d1530'; g.fillRect(0, 0, S, S);
+      const rg = g.createRadialGradient(cx, cx, 0, cx, cx, cx);
+      rg.addColorStop(0, '#1c2a55'); rg.addColorStop(1, '#0a1026');
+      g.fillStyle = rg; g.beginPath(); g.arc(cx, cx, 510, 0, Math.PI * 2); g.fill();
+      [[500, '#f59e0b', 10], [470, '#14b8a6', 4], [300, '#f59e0b', 5], [200, '#14b8a6', 3], [120, '#f59e0b', 3]].forEach(([r, col, w]) => {
+        g.beginPath(); g.arc(cx, cx, r, 0, Math.PI * 2); g.strokeStyle = col; g.lineWidth = w; g.stroke();
+      });
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        g.save(); g.translate(cx, cx); g.rotate(a + Math.PI / 2);
+        g.fillStyle = '#fbbf24'; g.font = '800 34px "Plus Jakarta Sans", sans-serif'; g.textAlign = 'center';
+        g.fillText(String(i + 1), 0, -360);
+        g.fillStyle = 'rgba(251,191,36,0.55)'; g.fillRect(-3, -320, 6, 26);
+        g.restore();
+      }
+      const ring = 'CHANGING THE CHANNEL • THE 10 GOLDEN RULES • ';
+      g.font = '700 30px "Plus Jakarta Sans", sans-serif'; g.fillStyle = '#e2e8f0'; g.textAlign = 'center';
+      const full = ring + ring;
+      for (let i = 0; i < full.length; i++) {
+        const a = (i / full.length) * Math.PI * 2;
+        g.save(); g.translate(cx, cx); g.rotate(a); g.fillText(full[i], 0, -432); g.restore();
+      }
+      // woven texture
+      g.globalAlpha = 0.07; g.fillStyle = '#000';
+      for (let y = 0; y < S; y += 4) g.fillRect(0, y, S, 1);
+      for (let x = 0; x < S; x += 4) g.fillRect(x, 0, 1, S);
+      g.globalAlpha = 1;
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 8;
+      return t;
+    }
+    const rug = add(studio, new THREE.CircleGeometry(2.3, 96), new THREE.MeshStandardMaterial({ map: makeRugTexture(), roughness: 1, metalness: 0 }), 0, 0.006, 0, { rx: -Math.PI / 2 });
+    rug.receiveShadow = true;
+
+    // EQ ring becomes a low LED border around the rug
+    studioEqBars.forEach((bar, i) => {
+      const a = (i / studioEqBars.length) * Math.PI * 2;
+      bar.position.set(Math.cos(a) * 2.42, 0, Math.sin(a) * 2.42);
+      bar.scale.set(0.6, 0.2, 0.6);
+    });
+
+    // Curved brick back wall
+    const WALL_R = 8.3, WALL_H = 5.4;
+    const brickMat = dress(new THREE.MeshStandardMaterial({ side: THREE.BackSide }), { map: 'brick_color.jpg', bump: 'brick_bump.jpg', rough: 'brick_rough.jpg', repeat: [16, 3.2], color: '#8a6460', roughness: 0.95, bumpScale: 2.5 });
+    const backWall = new THREE.Mesh(new THREE.CylinderGeometry(WALL_R, WALL_R, WALL_H, 96, 1, true, Math.PI - 1.9, 3.8), brickMat);
+    backWall.position.y = WALL_H / 2;
+    backWall.receiveShadow = true;
+    studio.add(backWall);
+    const wallAt = (theta, y, inset = 0.04) => new THREE.Vector3(Math.sin(theta) * (WALL_R - inset), y, Math.cos(theta) * (WALL_R - inset));
+    function mountOnWall(obj, theta, y, inset) {
+      obj.position.copy(wallAt(theta, y, inset));
+      obj.lookAt(0, y, 0);
+      studio.add(obj);
+      return obj;
+    }
+    // Ceiling soffit with recessed lights
+    const soffit = new THREE.Mesh(new THREE.RingGeometry(WALL_R - 1.4, WALL_R, 96, 1, -Math.PI / 2 - 1.9, 3.8), M('#15131c', { roughness: 0.8 }));
+    soffit.rotation.x = Math.PI / 2;
+    soffit.position.y = WALL_H;
+    studio.add(soffit);
+
+    // Wood slat feature wall with pink LED wash behind the screens
+    const slatGeo = new THREE.BoxGeometry(0.07, 4.6, 0.06);
+    const slatMat = new THREE.MeshStandardMaterial({ color: '#5a3a24', roughness: 0.55, metalness: 0.05 });
+    const SLATS = 46;
+    const slats = new THREE.InstancedMesh(slatGeo, slatMat, SLATS);
+    for (let i = 0; i < SLATS; i++) {
+      const th = Math.PI + (i / (SLATS - 1) - 0.5) * 0.62;
+      dummy.position.copy(wallAt(th, 2.4, 0.22));
+      dummy.lookAt(0, 2.4, 0);
+      dummy.scale.setScalar(1);
+      dummy.updateMatrix();
+      slats.setMatrixAt(i, dummy.matrix);
+    }
+    slats.instanceMatrix.needsUpdate = true;
+    studio.add(slats);
+    const ledWash = new THREE.Mesh(new THREE.CylinderGeometry(WALL_R - 0.06, WALL_R - 0.06, 4.4, 48, 1, true, Math.PI - 0.32, 0.64), new THREE.MeshBasicMaterial({ color: '#c0266f', side: THREE.BackSide, toneMapped: false, transparent: true, opacity: 0.22 }));
+    ledWash.position.y = 2.4;
+    studio.add(ledWash);
+
+    // Acoustic wedge-foam panels in brand colours, framed in walnut
+    const foamNormal = loadTex('foam_normal.jpg', [1, 1.4]);
+    const foamFrameMat = dress(new THREE.MeshStandardMaterial(), { map: 'wood_color.jpg', repeat: [0.3, 1], color: '#5a3a26', roughness: 0.6 });
+    const foamPanels = [
+      [Math.PI - 0.82, 2.55, '#1f3d4a'], [Math.PI + 0.82, 2.55, '#3a1f3d'],
+      [Math.PI - 1.25, 1.75, '#26262f'], [Math.PI + 1.25, 1.75, '#26262f'],
+      [Math.PI - 1.25, 3.85, '#3a1f3d'], [Math.PI + 1.25, 3.85, '#1f3d4a']
+    ];
+    foamPanels.forEach(([th, y, col]) => {
+      const g = new THREE.Group();
+      const foam = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.5, 0.1), new THREE.MeshStandardMaterial({ color: col, normalMap: foamNormal, normalScale: new THREE.Vector2(1.6, 1.6), roughness: 1 }));
+      foam.position.z = 0.05;
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.42, 1.62, 0.06), foamFrameMat);
+      g.add(frame, foam);
+      mountOnWall(g, th, y, 0.08);
+    });
+
+    // Framed gold & platinum records
+    function makePlaqueTexture(line1, line2) {
+      const c = document.createElement('canvas');
+      c.width = 512; c.height = 128;
+      const g = c.getContext('2d');
+      g.fillStyle = '#f5f1e6'; g.fillRect(0, 0, 512, 128);
+      g.fillStyle = '#1c1917'; g.textAlign = 'center';
+      g.font = '700 34px "Cormorant Garamond", Georgia, serif'; g.fillText(line1, 256, 54);
+      g.font = '600 22px "Plus Jakarta Sans", sans-serif'; g.fillStyle = '#78716c'; g.fillText(line2, 256, 96);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    }
+    const goldDiscMat = new THREE.MeshStandardMaterial({ color: '#f2c45a', metalness: 1, roughness: 0.18 });
+    const platDiscMat = new THREE.MeshStandardMaterial({ color: '#e5e7eb', metalness: 1, roughness: 0.15 });
+    [[Math.PI - 1.6, 2.5, goldDiscMat, 'Changing the Channel', 'Theme Song • Certified Gold'], [Math.PI + 1.6, 2.5, platDiscMat, 'The 10 Golden Rules', 'Audiobook • Lamont Hightower']].forEach(([th, y, dm, l1, l2]) => {
+      const g = new THREE.Group();
+      add(g, new THREE.BoxGeometry(1.15, 1.45, 0.06), M('#0b0b0f', { roughness: 0.3, metalness: 0.4 }), 0, 0, 0.03);
+      add(g, new THREE.PlaneGeometry(1.0, 1.3), M('#151a2c', { roughness: 0.95 }), 0, 0, 0.065);
+      add(g, new THREE.CylinderGeometry(0.4, 0.4, 0.01, 64), dm, 0, 0.12, 0.075, { rx: Math.PI / 2 });
+      add(g, new THREE.CylinderGeometry(0.13, 0.13, 0.012, 32), glowM('#f59e0b'), 0, 0.12, 0.078, { rx: Math.PI / 2 });
+      add(g, new THREE.PlaneGeometry(0.8, 0.2), new THREE.MeshStandardMaterial({ map: makePlaqueTexture(l1, l2), roughness: 0.6 }), 0, -0.47, 0.07);
+      add(g, new THREE.PlaneGeometry(1.0, 1.3), new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: 0.08, roughness: 0.02, metalness: 0, clearcoat: 1 }), 0, 0, 0.09);
+      mountOnWall(g, th, y, 0.08);
+    });
+
+    // Neon "CHANGING THE CHANNEL" sign over the monitors
+    function makeNeonTexture() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 160;
+      const g = c.getContext('2d');
+      g.clearRect(0, 0, 1024, 160);
+      g.textAlign = 'center';
+      g.font = 'italic 700 92px "Cormorant Garamond", Georgia, serif';
+      g.shadowColor = '#ff7ab8'; g.shadowBlur = 26;
+      g.strokeStyle = '#ffd1e6'; g.lineWidth = 5;
+      g.strokeText('Changing the Channel', 512, 110);
+      g.shadowBlur = 8; g.fillStyle = 'rgba(255, 220, 236, 0.95)';
+      g.fillText('Changing the Channel', 512, 110);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    }
+    const neonSignMat = new THREE.MeshBasicMaterial({ map: makeNeonTexture(), transparent: true, toneMapped: false, depthWrite: false });
+    const neonSign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.53), neonSignMat);
+    mountOnWall(neonSign, Math.PI, 2.98, 0.6);
+    neonSign.scale.setScalar(0.92);
+    centerScreen.scale.setScalar(0.8);
+    centerFrame.scale.setScalar(0.8);
+    centerScreen.position.y = centerFrame.position.y = 2.2;
+    onAir.position.set(-2.3, 2.55, -6.95);
+    onAir.scale.setScalar(0.75);
+
+    // Monitors: matte bezels and stands instead of glowing pink/cyan rectangles
+    const bezelMat = new THREE.MeshStandardMaterial({ color: '#0d0f14', roughness: 0.35, metalness: 0.6 });
+    centerFrame.material = bezelMat;
+    wallGroup.traverse(o => { if (o.isMesh && o.material && o.material.color && o.material.color.getHexString && o.material.color.getHexString() === '22d3ee') o.material = bezelMat; });
+    const screenStrip = add(wallGroup, new THREE.BoxGeometry(2.98, 0.025, 0.03), glowM('#f59e0b'), 0, 2.2 - 0.87, -5.58);
+    screenStrip.castShadow = false;
+
+    // Console: carbon-fibre body, brushed top
+    const carbonMat = dress(new THREE.MeshStandardMaterial(), { map: 'carbon_color.jpg', normal: 'carbon_normal.jpg', repeat: [3, 1], roughness: 0.35, metalness: 0.3, color: '#9aa0b0' });
+    consoleG.children[0].material = carbonMat;
+
+    // Warm practical lamp glow on the brick so the room reads as lived-in
+    const wallWash = new THREE.SpotLight('#ffc48a', 9, 14, 0.7, 0.9, 1.6);
+    wallWash.position.set(0, 4.9, -2.5);
+    wallWash.target.position.set(0, 2.0, -8.2);
+    studio.add(wallWash, wallWash.target);
 
     // ---------- Per-frame world animation ----------
     let lastScreenDraw = 0;
@@ -4600,7 +4875,7 @@
         gridUniforms.uPulse.value = bass;
         studioEqBars.forEach((bar, idx) => {
           const v = eqLevels[idx % eqLevels.length];
-          bar.scale.y = 0.15 + v * 1.9;
+          bar.scale.y = 0.1 + v * 0.55;
         });
         speakerCones.forEach((ring, i) => ring.scale.setScalar(1 + bass * (i % 2 ? 0.12 : 0.22)));
         vinyls.forEach(v => {
